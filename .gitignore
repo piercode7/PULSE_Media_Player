@@ -1,0 +1,60 @@
+# File di compilazione e target
+/target/
+*.class
+*.jar
+
+# File dell'IDE (IntelliJ)
+/.idea/
+/*.iml
+
+# Ambiente virtuale Python
+/venv/
+
+# File di cache e compilati Python
+*.pyc
+__pycache__/
+
+# Credenziali e file sensibili
+spotify_credentials.json
+
+# File di serializzazione e binari
+*.ser
+
+# Escludi il file info.txt
+info.txt
+
+# Escludi il file music_library.ser
+music_library.ser
+
+# Escludi la cartella media
+media/
+
+# File di log
+*.log
+/logs/
+
+# File temporanei
+*.tmp
+*.temp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# File binari ed eseguibili
+*.exe
+*.dll
+*.so
+
+# File di certificati
+*.pem
+
+
+# Ignora l'ambiente virtuale Python all'interno di resources
+/src/main/resources/venv/

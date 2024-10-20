@@ -1,0 +1,208 @@
+/* Generale */
+.root {
+    -fx-base: #1e1e1e; /* Colore di base scuro */
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: #ffffff; /* Colore del testo bianco */
+}
+
+/* Stile del MenuBar (barra del menu in alto) */
+.menu-bar {
+    -fx-background-color: #333333; /* Sfondo del MenuBar scuro */
+    -fx-border-color: #555555; /* Bordi del MenuBar */
+}
+
+/* Stile delle voci del menu */
+.menu {
+    -fx-text-fill: white; /* Testo bianco per le voci del menu */
+    -fx-background-color: #333333; /* Sfondo scuro per le voci del menu */
+}
+
+/* Stile per il menu al passaggio del mouse */
+.menu:hover {
+    -fx-background-color: #444444; /* Sfondo leggermente più chiaro al passaggio del mouse */
+}
+
+/* Stile per i MenuItem (elementi all'interno dei menu) */
+.menu-item {
+    -fx-text-fill: white; /* Testo bianco per i MenuItem */
+    -fx-background-color: #333333; /* Sfondo scuro per i MenuItem */
+}
+
+/* Stile per i MenuItem al passaggio del mouse */
+.menu-item:hover {
+    -fx-background-color: #444444; /* Sfondo leggermente più chiaro al passaggio del mouse */
+}
+
+/* Stile per i MenuItem selezionati */
+.menu-item:selected {
+    -fx-background-color: #000000; /* Sfondo per i MenuItem selezionati */
+    -fx-text-fill: white; /* Testo bianco per i MenuItem selezionati */
+}
+
+/* Stile delle separazioni (divider) nel menu */
+.separator {
+    -fx-background-color: #555555; /* Colore delle linee di separazione */
+}
+
+/* Stile dei pulsanti */
+.button {
+    -fx-background-color: #333; /* Sfondo dei pulsanti */
+    -fx-text-fill: white; /* Testo dei pulsanti */
+    -fx-border-color: #555; /* Bordo del pulsante */
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 10, 0.5, 0, 2);
+}
+
+.button:hover {
+    -fx-background-color: #444; /* Colore più chiaro al passaggio del mouse */
+    -fx-border-color: #666;
+}
+
+/* Stile delle ListView */
+.list-view {
+    -fx-background-color: #202020; /* Sfondo scuro della lista */
+    -fx-border-color: #1d1d1d;
+    -fx-text-fill: white;
+}
+
+.list-cell {
+    -fx-background-color: #1d1d1d; /* Sfondo degli elementi */
+    -fx-text-fill: #d3d3d3; /* Colore del testo degli elementi */
+}
+
+.list-cell:hover {
+    -fx-background-color: #1d1d1d; /* Colore più chiaro quando si passa il mouse su una cella */
+}
+
+.list-cell:selected {
+    -fx-background-color: #0b0b0b; /* Colore degli elementi selezionati */
+    -fx-text-fill: #ffffff;
+}
+
+/* Stile delle TableView */
+./* Stile per le celle della tabella */
+.table-view .table-cell {
+    -fx-text-fill: white !important; /* Usa `!important` per sovrascrivere eventuali altre regole */
+}
+
+
+/* Stile per le celle della tabella */
+.table-view .table-cell {
+    -fx-text-fill: white; /* Testo bianco */
+}
+
+/* Stile per la riga della tabella */
+.table-row-cell {
+    -fx-background-color: #1e1e1e; /* Sfondo nero */
+    -fx-text-fill: white; /* Testo bianco */
+}
+
+/* Stile alternato per le righe dispari */
+.table-row-cell:odd {
+    -fx-background-color: #2b2b2b; /* Sfondo grigio scuro per righe dispari */
+}
+
+/* Stile per le righe selezionate */
+.table-row-cell:selected {
+    -fx-background-color: #000000; /* Sfondo più chiaro per la selezione */
+    -fx-text-fill: white; /* Testo bianco per la selezione */
+}
+/* Stile per lo stato della tabella vuota */
+.table-view .placeholder {
+    -fx-background-color: #2b2b2b; /* Colore di sfondo scuro per la tabella vuota */
+    -fx-text-fill: #999999; /* Colore del testo per il messaggio di placeholder */
+    -fx-font-size: 14px; /* Dimensione del testo del messaggio */
+}
+
+/* Rimuove il bordo esterno della TableView */
+.table-view {
+    -fx-border-color: #1e1e1e;  /* Usa lo stesso colore dello sfondo */
+    -fx-background-insets: 0;
+    -fx-background-color: #1e1e1e; /* Mantiene la coerenza del colore di sfondo */
+}
+
+/* Rimuove il bordo del focus */
+.table-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Rimuove il bordo selezionato delle righe */
+.table-row-cell:selected {
+    -fx-background-color: #000000; /* Mantiene uno sfondo scuro per le righe selezionate */
+    -fx-text-fill: white; /* Testo bianco per la selezione */
+    -fx-border-color: transparent; /* Rimuove il bordo blu */
+}
+
+
+/* Stile delle TextField */
+.text-field {
+    -fx-background-color: #333; /* Sfondo dei campi di testo */
+    -fx-text-fill: white; /* Testo nei campi */
+    -fx-border-color: #555;
+}
+
+/* Scorrimento */
+.scroll-bar {
+    -fx-background-color: #1e1e1e;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #444;
+    -fx-background-radius: 5px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #666;
+}
+
+/* Stile dei Label */
+.label {
+    -fx-text-fill: #d3d3d3;
+}
+
+/* Stile delle ImageView (ad esempio per album cover) */
+.image-view {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0.5, 0, 2);
+    -fx-border-color: #000; /* Contorno nero */
+    -fx-border-width: 2; /* Spessore del contorno */
+    -fx-border-radius: 5px; /* Raggio del contorno */
+    -fx-padding: 5; /* Spazio tra l'immagine e il contorno */
+}
+
+/* Stile per il BorderPane in basso */
+#bottom {
+    -fx-background-color: #202020; /* Sfondo scuro per la parte inferiore */
+    -fx-border-color: #000000; /* Colore del bordo (opzionale) */
+    -fx-border-width: 1px 0 0 0; /* Bordi in alto, per separare dal resto */
+}
+
+
+/* Class for clickable labels */
+.clickable-label {
+    -fx-cursor: hand; /* Change cursor to hand on hover */
+}
+
+.clickable-label:hover {
+    -fx-underline: true; /* Underline text on hover */
+    -fx-text-fill: #1e90ff; /* Change text color on hover (optional) */
+}
+
+/* Default style for the ToggleButton */
+.toggle-button {
+    -fx-background-color: #444; /* Default background color */
+    -fx-text-fill: white;
+}
+
+/* Style for when the ToggleButton is selected */
+.toggle-button:selected {
+    -fx-background-color: #760000; /* Green color when selected */
+    -fx-text-fill: white;
+}
+
+
+/* Scena */
+.scene {
+    -fx-background-color: #1e1e1e;
+}

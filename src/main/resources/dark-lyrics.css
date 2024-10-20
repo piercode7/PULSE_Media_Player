@@ -1,0 +1,89 @@
+/* Stile generale per il background */
+.root {
+    -fx-background-color: #2b2b2b; /* Grigio scuro */
+}
+
+/* Stile del TextArea */
+.text-area {
+    -fx-control-inner-background: #1e1e1e; /* Fondo del TextArea */
+    -fx-text-fill: #dcdcdc; /* Colore del testo */
+    -fx-highlight-fill: #444; /* Colore di sfondo del testo selezionato */
+    -fx-highlight-text-fill: white; /* Colore del testo selezionato */
+    -fx-prompt-text-fill: #aaaaaa; /* Colore del testo segnaposto */
+    -fx-background-insets: 0;
+    -fx-background-radius: 5;
+}
+
+/* Stile del pulsante */
+.button {
+    -fx-background-color: #444444;
+    -fx-text-fill: white;
+    -fx-border-color: #666666;
+    -fx-border-radius: 5;
+}
+
+/* Stile del pulsante quando viene premuto */
+.button:pressed {
+    -fx-background-color: #555555;
+}
+
+/* Barra di scorrimento */
+.scroll-pane .scroll-bar {
+    -fx-background-color: #333333;
+}
+
+.scroll-pane .scroll-bar .increment-button,
+.scroll-pane .scroll-bar .decrement-button {
+    -fx-background-color: #444444;
+}
+
+.scroll-pane .scroll-bar .thumb {
+    -fx-background-color: #666666;
+}
+
+/* Stile dell'HBox contenitore */
+.hbox {
+    -fx-background-color: #333333; /* Sfondo scuro */
+}
+
+/* Stile delle etichette */
+.label {
+    -fx-text-fill: #dcdcdc;
+}
+
+/* Stile per il TextArea della finestra dei lyrics */
+.text-area .scroll-pane .viewport {
+    -fx-padding: 5; /* Aggiungi padding per un aspetto più fluido */
+}
+
+/* Stile per il messaggio di conferma (Alert) */
+.dialog-pane {
+    -fx-background-color: #2b2b2b; /* Sfondo scuro del dialogo */
+    -fx-border-color: #444444; /* Bordo del dialogo */
+    -fx-border-width: 2;
+}
+
+.dialog-pane .content.label {
+    -fx-text-fill: #dcdcdc; /* Colore del testo nel contenuto del dialogo */
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #333333; /* Sfondo dell'intestazione del dialogo */
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #dcdcdc; /* Colore del testo dell'intestazione */
+}
+
+/* Stile dei pulsanti nel messaggio di conferma */
+.dialog-pane .button-bar .button {
+    -fx-background-color: #444444;
+    -fx-text-fill: white;
+    -fx-border-color: #666666;
+    -fx-border-radius: 5;
+}
+
+/* Stile dei pulsanti nel messaggio di conferma quando vengono premuti */
+.dialog-pane .button-bar .button:pressed {
+    -fx-background-color: #555555;
+}

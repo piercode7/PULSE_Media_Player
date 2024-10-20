@@ -1,0 +1,65 @@
+/* Stile per la finestra principale dell'editor */
+.root {
+    -fx-background-color: #2b2b2b;
+    -fx-padding: 10;
+}
+
+/* Stile per il titolo della finestra */
+.label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+}
+
+/* Stile per il campo di testo del nome della playlist */
+.text-field {
+    -fx-background-color: #444444;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #888888;
+    -fx-border-color: #666666;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 5;
+}
+
+/* Stile per la tabella */
+.table-view {
+    -fx-background-color: #3a3a3a;
+    -fx-table-cell-border-color: #555555;
+    -fx-border-color: #444444;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #444444;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #e0e0e0;
+    -fx-background-color: transparent;
+}
+
+.table-view .table-row-cell:filled:selected {
+    -fx-background-color: #555555;
+    -fx-text-fill: #ffffff;
+}
+
+/* Stile per le colonne della tabella */
+.table-column {
+    -fx-text-fill: #e0e0e0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Stile per i pulsanti */
+.button {
+    -fx-background-color: #5c8aff;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 5;
+    -fx-padding: 5 15;
+}
+
+.button:hover {
+    -fx-background-color: #4a76e0;
+}
+
+.button:pressed {
+    -fx-background-color: #3c5db8;
+}

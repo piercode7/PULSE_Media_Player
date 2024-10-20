@@ -1,0 +1,36 @@
+/* app-menu.css */
+
+/* Stile generale per la barra del menu */
+.menu-bar {
+    -fx-background-color: #333333; /* Sfondo scuro */
+    -fx-border-color: #444444; /* Bordo leggero per separazione */
+    -fx-border-width: 0 0 1 0; /* Bordo solo in basso */
+}
+
+/* Stile per il testo del menu */
+.menu {
+    -fx-text-fill: white; /* Testo bianco */
+    -fx-font-weight: bold; /* Testo in grassetto */
+}
+
+.menu:hover {
+    -fx-background-color: #444444; /* Colore di sfondo al passaggio del mouse */
+}
+
+.menu-item {
+    -fx-text-fill: white; /* Colore del testo degli item */
+    -fx-background-color: #333333; /* Sfondo scuro */
+}
+
+.menu-item:hover {
+    -fx-background-color: #555555; /* Colore di sfondo quando si passa sopra un item */
+}
+
+.menu-item:focused {
+    -fx-background-color: #666666; /* Colore di sfondo quando un item è selezionato */
+}
+
+/* Separatore tra le voci di menu */
+.separator {
+    -fx-background-color: #555555;
+}

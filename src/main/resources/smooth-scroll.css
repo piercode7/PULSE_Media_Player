@@ -1,0 +1,7 @@
+.text-area .scroll-pane .viewport {
+    -fx-padding: 5; /* Aggiungi padding per un aspetto più fluido */
+}
+
+.scroll-pane .scroll-bar:vertical {
+    -fx-opacity: 0.8; /* Opacità maggiore per uno scrolling più evidente */
+}
