@@ -108,8 +108,14 @@
                 <configuration>
                     <mainClass>org.mypulse.view.MainView</mainClass>
                     <options>
+                        <option>--module-path</option>
+                        <option>/home/pierdeb/IdeaProjects/GUIapp/lib/javafx-sdk-21.0.2/lib</option>
+                        <option>--add-modules</option>
+                        <option>javafx.controls,javafx.fxml</option>
                         <option>--add-exports=javafx.graphics/com.sun.glass.utils=ALL-UNNAMED</option>
                         <option>--add-exports=javafx.media/com.sun.media.jfxmediaimpl=ALL-UNNAMED</option>
+                        <option>--add-exports=javafx.base/com.sun.javafx=ALL-UNNAMED</option>
+                        <option>--add-exports=javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>
