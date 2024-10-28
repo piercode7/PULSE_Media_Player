@@ -58,3 +58,4 @@ Desktop.ini
 
 # Ignora l'ambiente virtuale Python all'interno di resources
 /src/main/resources/venv/
+javafx-sdk-21.0.2

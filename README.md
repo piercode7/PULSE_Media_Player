@@ -17,7 +17,10 @@ Questo progetto utilizza JavaFX per l'interfaccia grafica e per la riproduzione 
 2. Salva il file `.zip` nella directory principale del progetto.
 3. Estrai il contenuto nella directory principale in modo che il percorso della libreria JavaFX sia `javafx-sdk-21.0.2/lib`.
 
+
+
 Per avviare l'applicazione esegui il comando:
 
+
 ```bash
-./setup-javafx.sh
+./run.sh
