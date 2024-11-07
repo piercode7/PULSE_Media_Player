@@ -145,9 +145,9 @@ public class MainView extends Application {
         ColumnConstraints col3 = new ColumnConstraints();
         ColumnConstraints col4 = new ColumnConstraints();
         col1.setPercentWidth(10); // Regola la percentuale in base alle tue necessità
-        col2.setPercentWidth(20);
-        col3.setPercentWidth(30);
-        col4.setPercentWidth(40);
+        col2.setPercentWidth(15);
+        col3.setPercentWidth(25);
+        col4.setPercentWidth(50);
 
         gridPane.getColumnConstraints().addAll(col1, col2, col3, col4);
 
