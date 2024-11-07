@@ -139,6 +139,18 @@ public class MainView extends Application {
 
         // Layout grid
         GridPane gridPane = new GridPane();
+        // Aggiungi queste righe per impostare larghezze proporzionali per le colonne
+        ColumnConstraints col1 = new ColumnConstraints();
+        ColumnConstraints col2 = new ColumnConstraints();
+        ColumnConstraints col3 = new ColumnConstraints();
+        ColumnConstraints col4 = new ColumnConstraints();
+        col1.setPercentWidth(10); // Regola la percentuale in base alle tue necessità
+        col2.setPercentWidth(20);
+        col3.setPercentWidth(30);
+        col4.setPercentWidth(40);
+
+        gridPane.getColumnConstraints().addAll(col1, col2, col3, col4);
+
         gridPane.setHgap(10);
         gridPane.setVgap(10);
         gridPane.setPadding(new Insets(10));
@@ -205,6 +217,8 @@ public class MainView extends Application {
 
         // Imposta il GridPane al centro del BorderPane
         rootPane.setCenter(gridPane);
+        BorderPane.setAlignment(gridPane, Pos.CENTER);
+
         // Aggiungere il menuBar in alto
         rootPane.setTop(menuBar);
 
