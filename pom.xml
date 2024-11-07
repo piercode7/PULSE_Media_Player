@@ -76,6 +76,7 @@
             <version>0.9.1</version>
         </dependency>
 
+
         <!-- Dipendenza per Apache Commons Imaging -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -101,6 +102,9 @@
 
     <build>
         <plugins>
+            <!-- Altri plugin esistenti -->
+
+            <!-- Plugin per javafx-maven-plugin -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -120,6 +124,25 @@
                 </configuration>
             </plugin>
 
+            <!-- Plugin per maven-dependency-plugin per generare il classpath -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
+                <executions>
+                    <execution>
+                        <id>build-classpath</id>
+                        <goals>
+                            <goal>build-classpath</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/classpath.txt</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Plugin per maven-compiler-plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
