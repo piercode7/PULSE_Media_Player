@@ -2,6 +2,7 @@
 /target/
 *.class
 *.jar
+classpath.txt
 
 # File dell'IDE (IntelliJ)
 /.idea/

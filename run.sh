@@ -1,19 +1,8 @@
 #!/bin/bash
+# Avvia Pulse tramite Maven: nessuno JavaFX SDK esterno necessario,
+# le dipendenze (comprese quelle native per il sistema operativo corrente)
+# vengono risolte automaticamente da Maven.
+set -e
 
-# Verifica che javafx-sdk-21.0.2 sia presente
-if [ ! -d "javafx-sdk-21.0.2/lib" ]; then
-  echo "Errore: La directory javafx-sdk-21.0.2/lib non esiste. Assicurati di aver estratto JavaFX SDK 21.0.2 nella directory principale del progetto."
-  exit 1
-fi
-
-mvn clean compile dependency:build-classpath
-
-java --module-path "${PWD}/javafx-sdk-21.0.2/lib" \
-     --add-modules javafx.controls,javafx.fxml,javafx.media \
-     --add-exports=javafx.graphics/com.sun.glass.utils=ALL-UNNAMED \
-     --add-exports=javafx.media/com.sun.media.jfxmediaimpl=ALL-UNNAMED \
-     --add-exports=javafx.base/com.sun.javafx=ALL-UNNAMED \
-     --add-exports=javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED \
-     -cp "target/classes:$(cat target/classpath.txt)" \
-     org.mypulse.view.MainView
-
+cd "$(dirname "$0")"
+mvn javafx:run

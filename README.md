@@ -4,23 +4,37 @@ Pulse è un'applicazione per la gestione e la riproduzione di brani musicali bas
 
 ## Requisiti
 
-- **Java**: versione 17 o successiva
-- **Maven**: per la gestione delle dipendenze
+- **Java**: JDK 17 o successivo
+- **Maven**: per la gestione delle dipendenze (JavaFX incluso: nessun SDK da scaricare a mano)
 
-## Configurazione di JavaFX
-
-Questo progetto utilizza JavaFX per l'interfaccia grafica e per la riproduzione dei media. JavaFX non viene distribuito automaticamente da Maven, quindi è necessario scaricare manualmente l'SDK.
-
-### Scaricare JavaFX SDK
-
-1. Vai a questo [link di Google Drive](https://drive.google.com/drive/folders/1qtOxk5RiR0dMnRJ8KpFafXfWpyidyLSw) per scaricare il file `javafx-sdk-21.0.2-linux-x64.zip`.
-2. Salva il file `.zip` nella directory principale del progetto.
-3. Estrai il contenuto nella directory principale in modo che il percorso della libreria JavaFX sia `javafx-sdk-21.0.2/lib`.
-
-
-
-Per avviare l'applicazione esegui il comando:
-
+## Avvio
 
 ```bash
 ./run.sh
+```
+
+oppure direttamente:
+
+```bash
+mvn javafx:run
+```
+
+Al primo avvio Maven scarica tutte le dipendenze (JavaFX, jaudiotagger, mp3agic, ecc.)
+per il sistema operativo corrente: non serve estrarre alcuno SDK JavaFX nella
+directory del progetto.
+
+## Funzionalità principali
+
+- Scansione ricorsiva di una cartella e catalogazione dei brani (`.mp3`) per artista/album
+- Riproduzione con coda, avanti/indietro, replay, seek e volume
+- Playlist con riordino drag & drop
+- Editor metadati (titolo, artista, album, genere, testi, copertina, ...)
+- Ricerca su artisti/album/brani
+- Copertine album da Spotify (richiede credenziali API personali) e testi da Genius
+  (script Python di supporto in `src/main/resources/get_lyrics.py`)
+
+## Note
+
+- La libreria viene salvata come `music_library.ser` nella directory del progetto
+  (File > Salva / Carica dal menu).
+- Le credenziali Spotify vengono salvate in `spotify_credentials.json` (non versionato).

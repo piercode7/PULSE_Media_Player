@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Playlist implements Serializable {
+    // Fissato esplicitamente: senza questo, ogni modifica alla classe invalida
+    // (InvalidClassException) tutte le librerie .ser salvate in precedenza.
+    private static final long serialVersionUID = 1L;
+
     private String name; // Name of the playlist
     private List<Track> tracks; // List of tracks in the playlist
     private String description; // Optional description of the playlist

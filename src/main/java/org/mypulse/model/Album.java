@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Album implements Serializable {
+    // Fissato esplicitamente: senza questo, ogni modifica alla classe invalida
+    // (InvalidClassException) tutte le librerie .ser salvate in precedenza.
+    private static final long serialVersionUID = 1L;
+
     private String name;
     private String artist;
     private String coverImagePath; // Percorso dell'immagine salvata

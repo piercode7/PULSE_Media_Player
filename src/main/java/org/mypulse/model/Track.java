@@ -3,6 +3,10 @@ package org.mypulse.model;
 import java.io.Serializable;
 
 public class Track implements Serializable {
+    // Fissato esplicitamente: senza questo, ogni modifica alla classe invalida
+    // (InvalidClassException) tutte le librerie .ser salvate in precedenza.
+    private static final long serialVersionUID = 1L;
+
     private String title;
     private Integer trackNumber;
     private Integer discNumber;
