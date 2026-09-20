@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.util.ThemeManager.Theme;
 
@@ -62,6 +63,7 @@ public class ThemePickerFrame {
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
         ThemeManager.applyToScene(scene);
+        TextSizeManager.applyToScene(scene);
 
         // Stessa correzione già usata per l'editor metadati: senza forzare CSS e layout
         // prima di sizeToScene(), la finestra si aprirebbe più piccola del contenuto vero

@@ -4,7 +4,10 @@ import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import org.mypulse.util.AppSettings;
 import org.mypulse.util.SerializationUtils;
+import org.mypulse.util.TextSizeManager;
+import org.mypulse.util.TextSizeManager.TextSize;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AllViews;
 import org.mypulse.view.components.TrackTableView;
@@ -56,7 +59,9 @@ public class AppMenu {
         // Creare i menu
         Menu fileMenu = new Menu("File");
         Menu editMenu = new Menu("Modifica");
-        Menu apiMenu = new Menu("API");
+        // Prima "API", con la sola voce Spotify: rinominato in "Impostazioni" per
+        // ospitare anche preferenze non legate a un'API specifica (vedi syncMetadataItem)
+        Menu settingsMenu = new Menu("Impostazioni");
         Menu viewMenu = new Menu("Vista");
 
         // Creare i menu item
@@ -74,8 +79,29 @@ public class AppMenu {
 
         MenuItem apiSpoti = new MenuItem("Inserisci API di Spotify");
 
+        // Prima veniva chiesto ogni volta (con un dialogo "Libreria"/"Libreria e
+        // metadati") se salvare le modifiche anche nei tag reali del file audio, sia
+        // dall'editor metadati sia dalla finestra Lyrics. Ora è una scelta persistente
+        // fatta una volta sola qui, invece che ripetuta ad ogni salvataggio.
+        CheckMenuItem syncMetadataItem = new CheckMenuItem("Aggiorna anche i metadati nel file audio");
+        syncMetadataItem.setSelected(AppSettings.isSyncMetadataToFile());
+        syncMetadataItem.setOnAction(event ->
+                AppSettings.setSyncMetadataToFile(syncMetadataItem.isSelected()));
+
         // Voce del menu "Vista", che finora non ne aveva mai avuta nessuna
         MenuItem themeItem = new MenuItem("Tema...");
+
+        // Sottomenu per la dimensione del testo (Compatta/Normale/Grande): tre opzioni
+        // mutuamente esclusive, non serve un frame dedicato come per il tema
+        Menu textSizeMenu = new Menu("Dimensione testo");
+        ToggleGroup textSizeGroup = new ToggleGroup();
+        for (TextSize size : TextSize.values()) {
+            RadioMenuItem item = new RadioMenuItem(size.getDisplayName());
+            item.setToggleGroup(textSizeGroup);
+            item.setSelected(size == TextSizeManager.getCurrent());
+            item.setOnAction(event -> TextSizeManager.applyTextSize(size));
+            textSizeMenu.getItems().add(item);
+        }
 
         // Aggiungere l'azione di scansione
         scanItem.setOnAction(event -> {
@@ -84,9 +110,9 @@ public class AppMenu {
             autoSaveLibrary(); // I brani appena trovati non erano ancora mai stati salvati
         });
 
-        // Aggiungere l'azione di uscita (stesso dialogo usato anche alla chiusura con la X,
-        // vedi confirmAndExit più sotto)
-        exitItem.setOnAction(event -> confirmAndExit(window));
+        // Aggiungere l'azione di uscita (stessa azione usata anche alla chiusura con la X,
+        // vedi saveAndExit più sotto)
+        exitItem.setOnAction(event -> saveAndExit(window));
 
         // Aggiungere l'azione di salvataggio con nome predefinito
         saveItem.setOnAction(event -> saveLibraryWithDefaultName(window));
@@ -146,6 +172,14 @@ public class AppMenu {
         editAlbumDetails.setOnAction(event -> {
             mainView.refreshAlbumDetail();
 
+            // Il genere aggiornato si vede nella lista album (sottotitolo di ogni cella):
+            // senza ripopolarla restava quello vecchio finché non si riselezionava
+            // manualmente "Artisti" o "Album" nel menu principale
+            mainView.getAlbumListView().populateAlbums();
+            String selectedArtist = mainView.listViewArtist.getSelectionModel().getSelectedItem();
+            if (selectedArtist != null && !selectedArtist.startsWith("Artisti trovati:")) {
+                mainView.getAlbumListView().populateAlbumsByArtist(selectedArtist);
+            }
         });
 
         apiSpoti.setOnAction(event -> SpotifyAPIDialog.requestAndSaveAPICredentials());
@@ -157,12 +191,12 @@ public class AppMenu {
 
         editMenu.getItems().addAll(editAlbumDetails);
 
-        apiMenu.getItems().addAll(apiSpoti);
+        settingsMenu.getItems().addAll(apiSpoti, new SeparatorMenuItem(), syncMetadataItem);
 
-        viewMenu.getItems().addAll(themeItem);
+        viewMenu.getItems().addAll(themeItem, textSizeMenu);
 
         // Aggiungere i menu al menuBar
-        menuBar.getMenus().addAll(fileMenu, editMenu, apiMenu, viewMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, settingsMenu, viewMenu);
 
         return menuBar;
 
@@ -177,30 +211,13 @@ public class AppMenu {
 
 
 
-    // Dialogo di conferma uscita: usato sia dalla voce di menu "Esci" sia dalla chiusura
-    // della finestra con la X, che prima non passava da qui e non salvava nulla
-    public void confirmAndExit(Window window) {
-        Alert confirmExit = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmExit.setTitle("Conferma uscita");
-        confirmExit.setHeaderText("Vuoi uscire dall'applicazione?");
-        confirmExit.setContentText("Se confermi, la libreria musicale verrà salvata prima di chiudere.");
-
-        ButtonType saveAndExitButton = new ButtonType("Salva e Esci");
-        ButtonType exitWithoutSavingButton = new ButtonType("Esci senza salvare");
-        ButtonType cancelButton = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        confirmExit.getButtonTypes().setAll(saveAndExitButton, exitWithoutSavingButton, cancelButton);
-
-        Optional<ButtonType> result = confirmExit.showAndWait();
-        if (result.isPresent()) {
-            if (result.get() == saveAndExitButton) {
-                saveLibraryWithoutConfirmation();
-                Platform.exit(); // Chiude l'applicazione dopo il salvataggio
-            } else if (result.get() == exitWithoutSavingButton) {
-                Platform.exit(); // Chiude l'applicazione senza salvare
-            }
-            // Se si clicca su "Annulla", non si fa nulla: la finestra resta aperta
-        }
+    // Usato sia dalla voce di menu "Esci" sia dalla chiusura della finestra con la X.
+    // Prima chiedeva conferma ogni volta (Salva e Esci / Esci senza salvare / Annulla):
+    // con il salvataggio automatico ormai attivo dopo ogni modifica significativa, quel
+    // dialogo era solo un passaggio in più - ora salva ed esce direttamente.
+    public void saveAndExit(Window window) {
+        saveLibraryWithoutConfirmation();
+        Platform.exit();
     }
 
     // Metodo per salvare la libreria con nome predefinito

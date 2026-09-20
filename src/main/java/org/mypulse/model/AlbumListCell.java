@@ -1,17 +1,27 @@
 package org.mypulse.model;
 
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.mypulse.model.Album;
 
 import java.io.ByteArrayInputStream;
 
 public class AlbumListCell extends ListCell<Album> {
+    // Prefisso usato per riconoscere l'album "finto" di intestazione ("Album trovati: N",
+    // aggiunto come primo elemento della lista da AlbumListView) - stesso meccanismo già
+    // usato per la lista Artisti, adattato a un ListView<Album> invece che <String>: qui
+    // non si può semplicemente aggiungere una stringa, quindi si usa un Album vero e
+    // proprio (con solo il nome impostato) riconosciuto da questo prefisso.
+    public static final String HEADER_PREFIX = "Album trovati: ";
+
     private final ImageView imageView = new ImageView();
     private final Label albumLabel = new Label();  // Etichetta per il titolo dell'album
     private final Label artistLabel = new Label(); // Etichetta per l'artista
@@ -19,7 +29,38 @@ public class AlbumListCell extends ListCell<Album> {
     private final HBox hbox = new HBox(10);  // HBox principale per l'immagine e le etichette
     private Image defaultImage;
 
+    // Riga di intestazione: etichetta col conteggio + due pulsanti di ordinamento. La
+    // cella dell'intestazione NON è più disabilitata (setDisable disabiliterebbe anche
+    // questi pulsanti, essendo figli suoi): la non-selezionabilità è garantita altrove,
+    // nei listener di selezione di MainView, che ignorano/annullano la selezione se cade
+    // su questa riga - vedi il commento lì.
+    private final Label headerLabel = new Label();
+    private final Button sortByTitleButton = new Button("A-Z");
+    private final Button sortByDateButton = new Button("Anno");
+    private final HBox headerBox = new HBox(8);
+
+    public AlbumListCell(Runnable onSortByTitle, Runnable onSortByDate) {
+        headerLabel.getStyleClass().add("album-cell-title");
+        sortByTitleButton.getStyleClass().add("album-sort-button");
+        sortByDateButton.getStyleClass().add("album-sort-button");
+        sortByTitleButton.setOnAction(e -> onSortByTitle.run());
+        sortByDateButton.setOnAction(e -> onSortByDate.run());
+
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        headerBox.getChildren().addAll(headerLabel, headerSpacer, sortByTitleButton, sortByDateButton);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+
+        buildLabelsAndImage();
+    }
+
+    // Costruttore usato dove l'ordinamento non serve (nessuno, per ora tutte le liste
+    // album lo usano) - tenuto per non forzare sempre i due Runnable dall'esterno
     public AlbumListCell() {
+        this(() -> {}, () -> {});
+    }
+
+    private void buildLabelsAndImage() {
         // Configurazione delle etichette: classi invece di un colore fisso inline, così
         // quando la cella è selezionata (.list-cell:selected in dark-theme.css) il testo
         // passa al colore -on-accent invece di restare grigio e poco leggibile sullo
@@ -54,7 +95,15 @@ public class AlbumListCell extends ListCell<Album> {
         if (empty || album == null) {
             setGraphic(null);
             setText(null);
+        } else if (album.getName() != null && album.getName().startsWith(HEADER_PREFIX)) {
+            // Riga di intestazione: etichetta col conteggio + pulsanti di ordinamento.
+            // La cella non va disabilitata (bloccherebbe anche i pulsanti): la
+            // non-selezionabilità è gestita nei listener di selezione in MainView.
+            headerLabel.setText(album.getName());
+            setText(null);
+            setGraphic(headerBox);
         } else {
+            setText(null); // Una cella riciclata dalla riga di intestazione avrebbe ancora quel testo impostato
             // Use the coverImageData byte array if available, otherwise use coverImagePath
             if (album.getCoverImage() != null) {
                 // If coverImageData is not null, use it to set the image

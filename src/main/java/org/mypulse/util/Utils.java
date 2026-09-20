@@ -22,6 +22,16 @@ public class Utils {
         }
     }
 
+    // Formato compatto ("1h 21m", o solo "42m" sotto l'ora) per la durata totale di un
+    // album: diverso da formatDurationInHMS sopra, pensato per il tempo di un singolo
+    // brano (mm:ss / h:mm:ss), qui i secondi non sono significativi su una somma
+    public static String formatDurationCompact(int totalSeconds) {
+        int totalMinutes = totalSeconds / 60;
+        int hours = totalMinutes / 60;
+        int minutes = totalMinutes % 60;
+        return hours > 0 ? (hours + "h " + minutes + "m") : (minutes + "m");
+    }
+
     // Metodo per verificare se la libreria musicale è valida
     public boolean isValidMusicLibrary(MusicLibrary library) {
         return library != null && library.getAllTracks() != null && library.getAllAlbums() != null;

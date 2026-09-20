@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 
@@ -91,6 +92,7 @@ public class PlaylistEditor {
         Scene scene = new Scene(root, 600, 400);
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
         ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
+        TextSizeManager.applyToScene(scene); // Applica la dimensione testo attualmente scelta
         stage.setScene(scene);
     }
 

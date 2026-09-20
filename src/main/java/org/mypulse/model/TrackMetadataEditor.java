@@ -19,7 +19,9 @@ import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.mypulse.util.AppSettings;
 import org.mypulse.util.LyricsFetcher;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AllViews;
@@ -108,6 +110,7 @@ public class TrackMetadataEditor {
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/dark-editor.css").toExternalForm());
         ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
+        TextSizeManager.applyToScene(scene); // Applica la dimensione testo attualmente scelta
         metadataStage.setScene(scene);
 
         // Il layout è comunque fisso (campi a larghezza costante, niente che debba
@@ -372,56 +375,61 @@ public class TrackMetadataEditor {
         String newAlbum = (albumCheckBox.isSelected() && !albumField.getText().equals("*"))
                 ? albumField.getText() : tracks.get(0).getAlbumName();
 
-        // Prompt user to choose between modifying file metadata or only updating the track instances
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Salva metadati");
-        alert.setHeaderText("Vuoi aggiornare solo la libreria o anche i metadati del file?");
+        // Stesso ragionamento per l'artista: serve per sapere quale artista mostrare
+        // dopo il salvataggio, nel caso sia stato appena rinominato (la selezione della
+        // lista non basta più: repopolarla perde il riferimento al vecchio nome)
+        String newArtist = (artistCheckBox.isSelected() && !artistField.getText().equals("*"))
+                ? artistField.getText() : tracks.get(0).getArtist();
 
-        ButtonType modifyFileButton = new ButtonType("Libreria e metadati");
-        ButtonType updateInstanceButton = new ButtonType("Libreria");
-        ButtonType cancelButton = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
+        // Se scrivere anche i tag reali nel file audio (oltre alla libreria interna) è
+        // stato chiesto ogni volta con un dialogo; ora è una preferenza scelta una volta
+        // sola in Impostazioni > "Aggiorna anche i metadati nel file audio".
+        if (AppSettings.isSyncMetadataToFile()) {
+            modifyFileMetadata();
+        }
+        createNewTrackInstances();
+        mainView.autoSaveLibrary();
 
-        alert.getButtonTypes().setAll(modifyFileButton, updateInstanceButton, cancelButton);
+        // Refresh the album details
+        mainView.refreshAlbumDetail();
 
-        alert.showAndWait().ifPresent(type -> {
-            if (type == modifyFileButton) {
-                // Modify file metadata and update the library
-                modifyFileMetadata();
-                createNewTrackInstances();
-                mainView.autoSaveLibrary();
-            } else if (type == updateInstanceButton) {
-                // Only create new track instances without modifying the file
-                createNewTrackInstances();
-                mainView.autoSaveLibrary();
-            } else {
-                // Annulla: non è stata fatta nessuna modifica, non c'è nulla da salvare
-                return;
-            }
+        // Le liste "Artisti"/"Album" nella colonna centrale non si aggiornavano da sole
+        // dopo una modifica: bisognava ricliccare su "Artisti" per far ripartire
+        // populateArtists() dal listener di selezione. Le ripopolo qui direttamente, così
+        // un nome artista/album cambiato (o il genere aggiornato) si vede subito.
+        // Cattura la selezione PRIMA di repopolare: dopo populateArtists() la vecchia
+        // voce non esiste più nella lista (clear + re-add) e la selezione andrebbe persa,
+        // impedendo di capire se la vista dell'artista era quella visibile
+        String previouslySelectedArtist = mainView.listViewArtist.getSelectionModel().getSelectedItem();
+        mainView.getArtistListView().populateArtists();
+        mainView.getAlbumListView().populateAlbums();
+        if (previouslySelectedArtist != null && !previouslySelectedArtist.startsWith("Artisti trovati:")) {
+            // Usa il nome (eventualmente) nuovo, non quello selezionato prima della
+            // modifica: se l'artista è stato rinominato, la vista deve seguirlo
+            mainView.getAlbumListView().populateAlbumsByArtist(newArtist);
+            mainView.listViewArtist.getSelectionModel().select(newArtist);
+        }
 
-            // Refresh the album details
-            mainView.refreshAlbumDetail();
+        // Ottieni la selezione corrente dal menu
+        String selectedMenu = mainView.getListViewMenu().getSelectionModel().getSelectedItem();
 
-            // Ottieni la selezione corrente dal menu
-            String selectedMenu = mainView.getListViewMenu().getSelectionModel().getSelectedItem();
+        // Aggiorna la tabella in base alla selezione attuale
+        if ("Artisti".equals(selectedMenu) || "Album".equals(selectedMenu)) {
+            // Aggiorna la tabella dei brani per l'album corrente
+            mainView.getTrackTableView().populateTracksByAlbum(newAlbum);
+            mainView.getTableViewTracks().refresh();
+        } else if ("Coda".equals(selectedMenu)) {
+            // Aggiorna la tabella della coda
+            mainView.getTrackTableView().populateAllTracksInQueue();
+            mainView.getTableViewTrackAllInQueue().refresh();
+        } else {
+            // Aggiorna la tabella estesa con tutti i brani
+            mainView.getTrackTableView().populateExtendedTrackTable();
+            mainView.getTableViewTrackAll().refresh();
+        }
 
-            // Aggiorna la tabella in base alla selezione attuale
-            if ("Artisti".equals(selectedMenu) || "Album".equals(selectedMenu)) {
-                // Aggiorna la tabella dei brani per l'album corrente
-                mainView.getTrackTableView().populateTracksByAlbum(newAlbum);
-                mainView.getTableViewTracks().refresh();
-            } else if ("Coda".equals(selectedMenu)) {
-                // Aggiorna la tabella della coda
-                mainView.getTrackTableView().populateAllTracksInQueue();
-                mainView.getTableViewTrackAllInQueue().refresh();
-            } else {
-                // Aggiorna la tabella estesa con tutti i brani
-                mainView.getTrackTableView().populateExtendedTrackTable();
-                mainView.getTableViewTrackAll().refresh();
-            }
-
-            // Chiudi la finestra di modifica dei metadati
-            metadataStage.close();
-        });
+        // Chiudi la finestra di modifica dei metadati
+        metadataStage.close();
     }
 
 

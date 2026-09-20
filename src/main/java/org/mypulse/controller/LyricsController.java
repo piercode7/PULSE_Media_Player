@@ -17,12 +17,13 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.mypulse.model.Track;
+import org.mypulse.util.AppSettings;
 import org.mypulse.util.LyricsFetcher;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 
 import java.io.File;
-import java.util.Optional;
 
 public class LyricsController {
     private final MainView mainView;
@@ -159,37 +160,17 @@ public class LyricsController {
             // Controlla se i testi sono stati modificati
             String newLyrics = lyricsArea.getText();
             if (!newLyrics.equals(track.getLyrics())) {
-                // Chiedi se aggiornare solo l'istanza o anche i metadati
-                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                alert.setTitle("Aggiornamento Lyrics");
-                alert.setHeaderText("Vuoi aggiornare solo la libreria o anche i metadati del file?");
-
-                ButtonType updateOnlyInstanceButton = new ButtonType("Solo Libreria");
-                ButtonType updateBothButton = new ButtonType("Libreria e metadati");
-                ButtonType cancelButton = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-                alert.getButtonTypes().setAll(updateOnlyInstanceButton, updateBothButton, cancelButton);
-
-                // Imposta il frame delle lyrics come proprietario del dialogo
-                alert.initOwner(lyricsStage);
-                alert.initModality(Modality.WINDOW_MODAL); // Modalità per apparire sopra al frame delle lyrics
-
-                Optional<ButtonType> result = alert.showAndWait();
-                if (result.isPresent()) {
-                    if (result.get() == updateOnlyInstanceButton) {
-                        // Aggiorna solo l'istanza nella libreria
-                        track.setLyrics(newLyrics);
-                        System.out.println("Lyrics aggiornati nella libreria.");
-                        mainView.autoSaveLibrary();
-                    } else if (result.get() == updateBothButton) {
-                        // Aggiorna sia l'istanza nella libreria che i metadati del file
-                        track.setLyrics(newLyrics);
-                        updateLyricsInFile(track); // Metodo per aggiornare i metadati effettivi
-                        System.out.println("Lyrics aggiornati nella libreria e nel file.");
-                        mainView.autoSaveLibrary();
-                    }
-                    // Se si clicca su "Annulla", non c'è nulla da salvare
+                // Se scrivere anche i tag reali nel file audio era chiesto ogni volta con
+                // un dialogo; ora è una preferenza scelta una volta sola in Impostazioni >
+                // "Aggiorna anche i metadati nel file audio".
+                track.setLyrics(newLyrics);
+                if (AppSettings.isSyncMetadataToFile()) {
+                    updateLyricsInFile(track);
+                    System.out.println("Lyrics aggiornati nella libreria e nel file.");
+                } else {
+                    System.out.println("Lyrics aggiornati nella libreria.");
                 }
+                mainView.autoSaveLibrary();
             }
         });
 
@@ -209,6 +190,7 @@ public class LyricsController {
         scene.getStylesheets().add(getClass().getResource("/smooth-scroll.css").toExternalForm());
         scene.getStylesheets().add(getClass().getResource("/dark-lyrics.css").toExternalForm());
         ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
+        TextSizeManager.applyToScene(scene); // Applica la dimensione testo attualmente scelta
 
         lyricsStage.setScene(scene);
         lyricsStage.show();

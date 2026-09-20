@@ -118,6 +118,15 @@
     -fx-fill: -on-accent;
 }
 
+/* Pulsanti di ordinamento nell'intestazione della lista Album ("A-Z"/"Anno"): più
+   piccoli e compatti dei pulsanti normali, per stare comodi dentro la riga della lista */
+.album-sort-button {
+    -fx-padding: 3px 10px;
+    -fx-font-size: 12px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+}
+
 /* Stile delle ListView */
 .list-view {
     -fx-background-color: -bg-surface;

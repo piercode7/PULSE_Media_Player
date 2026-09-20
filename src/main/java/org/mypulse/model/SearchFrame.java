@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Callback;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AlbumListView;
@@ -138,6 +139,7 @@ public class SearchFrame extends Stage {
         scene.setFill(null);  // Set the initial scene fill to transparent
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
         ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
+        TextSizeManager.applyToScene(scene); // Applica la dimensione testo attualmente scelta
         layout.applyCss();
 
 

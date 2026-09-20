@@ -1,6 +1,7 @@
 package org.mypulse.view;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -15,6 +16,7 @@ import org.mypulse.controller.LyricsController;
 import org.mypulse.controller.MusicController;
 import org.mypulse.model.*;
 import org.mypulse.util.SerializationUtils;
+import org.mypulse.util.TextSizeManager;
 import org.mypulse.util.ThemeManager;
 import org.mypulse.util.Utils;
 import org.mypulse.view.components.*;
@@ -39,6 +41,8 @@ public class MainView extends Application {
     private ImageView albumCoverView;  // Campo per mostrare la copertina dell'album
     private Image defaultImage;  // Campo per l'immagine di default
     private VBox imageAndTableContainer;  // Contenitore per immagine e tabella
+    private Label albumInfoNameLabel;   // Nome dell'album selezionato, sotto la copertina
+    private Label albumInfoDetailsLabel; // "N brani · 1h 21m" sotto il nome
     private FilteredList<Track> filteredTracks;  // Lista filtrata dei brani
     private List<Track> queuedTracks; // coda di ascolto
     private Track currentlyPlayingTrack; // Brano attualmente in riproduzione
@@ -214,9 +218,18 @@ public class MainView extends Application {
         albumCoverView.setSmooth(true);  // Rendering più pulito
         albumCoverView.setCache(true);  // Migliora la performance del rendering
 
+        // Nome dell'album e riepilogo (numero brani, durata totale) sotto la copertina:
+        // finora selezionare un album non mostrava il suo nome da nessuna parte in questa
+        // vista, bisognava tornare con lo sguardo alla lista a sinistra
+        albumInfoNameLabel = new Label("");
+        albumInfoNameLabel.getStyleClass().add("album-cell-title");
+        albumInfoNameLabel.setStyle("-fx-font-size: 16px;");
+        albumInfoDetailsLabel = new Label("");
+        albumInfoDetailsLabel.getStyleClass().add("album-cell-subtitle");
+
         imageAndTableContainer = new VBox(10);  // Spaziatura di 10 tra immagine e tabella
         imageAndTableContainer.setAlignment(Pos.CENTER);  // Centra l'immagine
-        imageAndTableContainer.getChildren().add(albumCoverView);
+        imageAndTableContainer.getChildren().addAll(albumCoverView, albumInfoNameLabel, albumInfoDetailsLabel);
 
         // Aggiungi la VBox al layout nella colonna desiderata (es. colonna 3)
         gridPane.add(imageAndTableContainer, 3, 0);
@@ -536,9 +549,20 @@ public class MainView extends Application {
         });
 
         listViewAlbum.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            // La riga di intestazione ("Album trovati: N", con i pulsanti di
+            // ordinamento) non è più una cella disabilitata come prima - disabilitarla
+            // avrebbe disabilitato anche i suoi pulsanti. Se finisce comunque selezionata
+            // (click, tastiera), la selezione viene semplicemente annullata qui, così il
+            // risultato per l'utente resta "non selezionabile" come intendevo prima.
+            if (newValue != null && newValue.getName() != null
+                    && newValue.getName().startsWith(AlbumListCell.HEADER_PREFIX)) {
+                Platform.runLater(() -> listViewAlbum.getSelectionModel().clearSelection());
+                return;
+            }
             if (newValue != null) {
                 String albumName = newValue.getName();
                 trackTableView.populateTracksByAlbum(albumName);
+                updateAlbumInfoLabels(newValue);
 
                 // Check if there are tracks in the album and set the cover image to the first track's cover
                 if (!tableViewTracks.getItems().isEmpty()) {
@@ -590,9 +614,18 @@ public class MainView extends Application {
 
 
         listViewAlbumAll.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            // Stesso ragionamento del listener di listViewAlbum qui sopra: la riga di
+            // intestazione non è disabilitata (per lasciare cliccabili i pulsanti di
+            // ordinamento), quindi se finisce selezionata la selezione viene annullata
+            if (newValue != null && newValue.getName() != null
+                    && newValue.getName().startsWith(AlbumListCell.HEADER_PREFIX)) {
+                Platform.runLater(() -> listViewAlbumAll.getSelectionModel().clearSelection());
+                return;
+            }
             if (newValue != null) {
                 String albumName = newValue.getName();
                 trackTableView.populateTracksByAlbum(albumName);
+                updateAlbumInfoLabels(newValue);
 
                 // Mostra la copertina dell'album selezionato sopra la tabella
                 String imagePath = newValue.getCoverImagePath();
@@ -674,17 +707,17 @@ public class MainView extends Application {
         Scene scene = new Scene(rootPane, 1400, 800);
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
         ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
+        TextSizeManager.applyToScene(scene); // Applica la dimensione testo attualmente scelta
 
         primaryStage.setScene(scene);
         primaryStage.setTitle("Pulse");
 
-        // Chiudere con la X passava prima direttamente per la chiusura della finestra,
-        // senza mai chiedere se salvare la libreria (a differenza di File > Esci): ora
-        // usa lo stesso dialogo, e consuma l'evento perché è confirmAndExit stesso a
-        // decidere se e quando chiudere davvero (via Platform.exit())
+        // Chiudere con la X usa la stessa azione di File > Esci: salva ed esce
+        // direttamente, senza più chiedere conferma (il salvataggio automatico gira già
+        // dopo ogni modifica significativa)
         primaryStage.setOnCloseRequest(event -> {
             event.consume();
-            appMenu.confirmAndExit(primaryStage);
+            appMenu.saveAndExit(primaryStage);
         });
 
         primaryStage.show();
@@ -856,6 +889,19 @@ public class MainView extends Application {
     }
 
 
+    // Aggiorna nome e riepilogo (numero brani, durata totale) sotto la copertina, quando
+    // si seleziona un album nella lista (sia quella di un artista che "tutti gli album")
+    private void updateAlbumInfoLabels(Album album) {
+        albumInfoNameLabel.setText(album.getName());
+
+        int trackCount = album.getTracks().size();
+        int totalSeconds = album.getTracks().stream()
+                .mapToInt(track -> track.getDuration() != null ? track.getDuration() : 0)
+                .sum();
+        String trackCountText = trackCount == 1 ? "1 brano" : trackCount + " brani";
+        albumInfoDetailsLabel.setText(trackCountText + " · " + Utils.formatDurationCompact(totalSeconds));
+    }
+
     public void refreshAlbumDetail() {
         // Recupera tutti gli album dalla libreria musicale
         List<Album> albums = getMusicLibrary().getAlbums();
@@ -883,6 +929,24 @@ public class MainView extends Application {
                 // Se ci sono più generi, imposta il genere dell'album come "Misto"
                 album.setGenre("Misto");
                 System.out.println("Album " + album.getName() + " impostato come genere misto.");
+            }
+
+            // Stessa cosa per l'anno: Album.addTrack() lo imposta solo per il primissimo
+            // brano aggiunto all'album (tracks.size() == 1) e non lo tocca mai più, quindi
+            // modificare l'anno di un brano da un album già esistente non aveva alcun
+            // effetto sull'album, né subito né dopo (nessun ricalcolo avveniva da nessuna
+            // parte) - stesso problema già risolto qui sopra per il genere
+            List<Integer> trackYears = album.getTracks().stream()
+                    .map(Track::getReleaseYear)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            if (trackYears.size() == 1) {
+                album.setReleaseDate(trackYears.get(0));
+            } else {
+                // Anni diversi (o alcuni brani senza anno): nessun valore singolo valido,
+                // AlbumListCell mostra già "Data sconosciuta" per un releaseDate nullo
+                album.setReleaseDate(null);
             }
         }
 
