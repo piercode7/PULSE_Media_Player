@@ -159,10 +159,17 @@ public class MediaPlayerController extends VBox {
         setRowFactoryForTableView(mainView.getTableViewTrackAll()); // Per la tabella "tutti i brani"
         setRowFactoryForTableView(mainView.getTableViewTrackAllInQueue()); // Per la tabella "brani in coda"
 
-
+        // I listener degli slider vanno registrati una sola volta: prima venivano
+        // aggiunti ad ogni cambio brano, accumulandosi e moltiplicando i seek
+        addProgressSliderListener();
     }
 
     private void setRowFactoryForTableView(TableView<Track> tableView) {
+        // Il listener di selezione va registrato una sola volta per tabella: la rowFactory
+        // sotto viene invocata da JavaFX per ogni riga renderizzata (scroll, resize, refresh),
+        // quindi chiamarlo da dentro duplicava il listener ad ogni ridisegno della tabella
+        addSelectionListener(tableView);
+
         tableView.setRowFactory(tv -> {
             TableRow<Track> row = new TableRow<Track>() {
                 @Override
@@ -178,10 +185,6 @@ public class MediaPlayerController extends VBox {
                 }
             };
 
-            // Aggiungi il listener per gestire la selezione multipla
-            addSelectionListener(tableView);
-
-
             // Listener per il doppio click che avvia la riproduzione del brano selezionato
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
@@ -189,10 +192,19 @@ public class MediaPlayerController extends VBox {
                     playSelectedTrack(selectedTrack); // Riproduci il brano selezionato
                     fillQueueWithTableTracks(tableView); // Riempie la coda con i brani presenti nella tabella
                 }
+            });
 
+            // Menu contestuale: usa l'evento dedicato invece di controllare il tasto del
+            // mouse dentro setOnMouseClicked, così il click destro seleziona prima la riga
+            // (a meno che non faccia già parte di una selezione multipla esistente) e le
+            // azioni del menu operano sulla selezione corretta invece che su quella precedente
+            row.setOnContextMenuRequested(event -> {
+                if (!row.isEmpty() && tableView != mainView.getTableViewTrackAllInQueue()) {
+                    if (!tableView.getSelectionModel().getSelectedItems().contains(row.getItem())) {
+                        tableView.getSelectionModel().clearSelection();
+                        tableView.getSelectionModel().select(row.getIndex());
+                    }
 
-                // Mostra il menu contestuale quando si usa il clic destro
-                if (event.getButton() == MouseButton.SECONDARY && !row.isEmpty() && tableView != mainView.getTableViewTrackAllInQueue()) {
                     // Crea il menu contestuale
                     ContextMenu contextMenu = new ContextMenu();
                     MenuItem addToQueueItem = new MenuItem("Aggiungi alla coda");
@@ -229,19 +241,19 @@ public class MediaPlayerController extends VBox {
 
                             if (trackFile.exists()) {
                                 try {
+                                    // Argomenti passati separatamente (niente concatenazione in una
+                                    // stringa di shell): un nome file con `"`, `$( )` o `;` non può
+                                    // più iniettare comandi arbitrari
                                     String os = System.getProperty("os.name").toLowerCase();
                                     if (os.contains("win")) {
                                         // Windows
-                                        String command = "explorer /select,\"" + trackFile.getAbsolutePath() + "\"";
-                                        Runtime.getRuntime().exec(command);
+                                        new ProcessBuilder("explorer", "/select,\"" + trackFile.getAbsolutePath() + "\"").start();
                                     } else if (os.contains("mac")) {
                                         // macOS
-                                        String command = "open -R \"" + trackFile.getAbsolutePath() + "\"";
-                                        Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", command});
+                                        new ProcessBuilder("open", "-R", trackFile.getAbsolutePath()).start();
                                     } else if (os.contains("nix") || os.contains("nux")) {
                                         // Linux: Use 'xdg-open' to open the directory (file selection is not supported in most Linux file managers)
-                                        String command = "xdg-open \"" + trackFile.getParent() + "\"";
-                                        Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", command});
+                                        new ProcessBuilder("xdg-open", trackFile.getParent()).start();
                                     } else {
                                         // Unsupported OS
                                         System.out.println("Unsupported operating system.");
@@ -377,7 +389,12 @@ public class MediaPlayerController extends VBox {
             });
 
             row.setOnDragOver(event -> {
-                if (event.getGestureSource() != row && event.getDragboard().hasString()) {
+                // Accetta il drop solo se la riga trascinata proviene dalla stessa tabella:
+                // un indice preso da un'altra tabella non ha senso su questa lista
+                if (event.getGestureSource() instanceof TableRow
+                        && ((TableRow<?>) event.getGestureSource()).getTableView() == tableView
+                        && event.getGestureSource() != row
+                        && event.getDragboard().hasString()) {
                     event.acceptTransferModes(TransferMode.MOVE);
                 }
                 event.consume();
@@ -387,23 +404,35 @@ public class MediaPlayerController extends VBox {
                 Dragboard dragboard = event.getDragboard();
                 boolean success = false;
 
-                if (dragboard.hasString()) {
+                if (dragboard.hasString() && event.getGestureSource() instanceof TableRow
+                        && ((TableRow<?>) event.getGestureSource()).getTableView() == tableView) {
                     int draggedIndex = Integer.parseInt(dragboard.getString());
+                    int dropIndex = row.isEmpty() ? tableView.getItems().size() : row.getIndex();
+
                     Track draggedTrack = tableView.getItems().remove(draggedIndex);
-
-                    int dropIndex;
-
-                    if (row.isEmpty()) {
-                        dropIndex = tableView.getItems().size();
-                    } else {
-                        dropIndex = row.getIndex();
+                    // La rimozione ha già spostato in basso di una posizione tutti gli
+                    // indici successivi a quello trascinato: se il bersaglio era dopo,
+                    // il suo indice calcolato prima della remove va corretto di conseguenza
+                    if (draggedIndex < dropIndex) {
+                        dropIndex--;
                     }
 
                     tableView.getItems().add(dropIndex, draggedTrack);
                     success = true;
 
+                    // Se è la tabella della coda, l'ordine di riproduzione va tenuto
+                    // sincronizzato con quello visuale: prima il drag&drop riordinava solo
+                    // la tabella, senza alcun effetto sull'ordine di riproduzione reale
+                    if (tableView == mainView.getTableViewTrackAllInQueue()) {
+                        Track currentlyPlaying = mainView.getCurrentlyPlayingTrack();
+                        queuedTracks.clear();
+                        queuedTracks.addAll(tableView.getItems());
+                        currentTrackIndex = (currentlyPlaying != null) ? queuedTracks.indexOf(currentlyPlaying) : -1;
+                    }
+
                     // Aggiorna la tabella
                     tableView.getSelectionModel().clearSelection();
+                    tableView.getSelectionModel().select(dropIndex);
                     tableView.refresh();
                 }
                 event.setDropCompleted(success);
@@ -521,9 +550,10 @@ public class MediaPlayerController extends VBox {
             File trackFile = new File(trackPath);
 
             if (trackFile.exists()) {
-                // Se c'è un media player già in esecuzione, fermalo
+                // Se c'è un media player già in esecuzione, fermalo e liberarne le risorse native
                 if (mediaPlayer != null) {
                     mediaPlayer.stop();
+                    mediaPlayer.dispose();
                 }
 
                 // Crea il Media e il MediaPlayer per il brano selezionato
@@ -550,14 +580,20 @@ public class MediaPlayerController extends VBox {
                     }
                 });
 
+                // Gestione errori: file corrotto/non decodificabile non deve bloccare la coda in silenzio
+                mediaPlayer.setOnError(() -> {
+                    System.out.println("Errore durante la riproduzione di " + trackPath + ": "
+                            + mediaPlayer.getError());
+                    // Salta sempre al successivo: con playNextTrack() e replay attivo si
+                    // ritenterebbe all'infinito lo stesso file rotto
+                    advanceToNextTrack();
+                });
+
                 // Inizia la riproduzione
                 mediaPlayer.play();
 
                 // Cambia il testo del pulsante Play a "Play"
                 playButton.setText("Play");
-
-                // Aggiungi il listener per lo slider di progresso
-                addProgressSliderListener();
 
                 // Imposta il brano corrente in riproduzione
                 mainView.setCurrentlyPlayingTrack(selectedTrack);
@@ -579,20 +615,25 @@ public class MediaPlayerController extends VBox {
     }
 
 
+    // Chiamato alla fine naturale di un brano (fine coda esclusa): qui il repeat-one va rispettato
     private void playNextTrack() {
         if (replayButton.isSelected()) {
-            // If replay is on, restart the current track
             playSelectedTrack(queuedTracks.get(currentTrackIndex));
         } else {
-            // Otherwise, move to the next track as usual
-            if (currentTrackIndex < queuedTracks.size() - 1) {
-                currentTrackIndex++;  // Move to the next track
-                playSelectedTrack(queuedTracks.get(currentTrackIndex));  // Play the next track
-            } else {
-                System.out.println("End of the queue, no next track to play.");
-                // Optionally disable the ">>" button if you want to prevent navigation
-                // nextButton.setDisable(true);
-            }
+            advanceToNextTrack();
+        }
+    }
+
+    // Avanza sempre al brano successivo in coda, indipendentemente dal repeat-one:
+    // usato sia dal salto manuale (">>") sia per saltare un brano che non è riproducibile
+    private void advanceToNextTrack() {
+        if (currentTrackIndex < queuedTracks.size() - 1) {
+            currentTrackIndex++;
+            playSelectedTrack(queuedTracks.get(currentTrackIndex));
+        } else {
+            System.out.println("Fine della coda, nessun brano successivo da riprodurre.");
+            // Optionally disable the ">>" button if you want to prevent navigation
+            // nextButton.setDisable(true);
         }
     }
 
@@ -723,20 +764,10 @@ public class MediaPlayerController extends VBox {
     }
 
 
+    // Pulsante ">>": un salto manuale deve sempre avanzare, il repeat-one riguarda
+    // solo cosa succede alla fine naturale di un brano, non la navigazione esplicita
     private void nextTrack() {
-        // Check if replayButton is selected
-        if (replayButton.isSelected()) {
-            // If replay is on, restart the current track
-            playSelectedTrack(queuedTracks.get(currentTrackIndex));
-        } else {
-            // Otherwise, move to the next track as usual
-            if (currentTrackIndex < queuedTracks.size() - 1) {
-                currentTrackIndex++;
-                playSelectedTrack(queuedTracks.get(currentTrackIndex));
-            } else {
-                System.out.println("End of queue, no next track to play.");
-            }
-        }
+        advanceToNextTrack();
     }
 
 
@@ -760,5 +791,15 @@ public class MediaPlayerController extends VBox {
         return mainView.getCurrentlyPlayingTrack();
     }
 
+    // Da chiamare alla chiusura dell'applicazione (Application.stop() in MainView) per
+    // liberare le risorse native del MediaPlayer: prima non veniva mai rilasciato in
+    // nessun caso alla chiusura, solo quando si premeva esplicitamente "Stop"
+    public void releaseMediaPlayer() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+    }
 
 }

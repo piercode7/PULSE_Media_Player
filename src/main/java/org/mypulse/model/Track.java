@@ -187,6 +187,10 @@ public class Track implements Serializable {
         return playCount;
     }
 
+    public void setPlayCount(Integer playCount) {
+        this.playCount = playCount;
+    }
+
     // Metodo per incrementare il contatore di riproduzione
     public void incrementPlayCount() {
         if (playCount != null) {

@@ -40,16 +40,13 @@ public class LyricsController {
             return;
         }
 
-        // Retrieve the song details from the labels
-        String title = mainView.getCurrentlyPlayingTrack().getTitle();
-        System.out.println(title);
-        String artist = mainView.getCurrentlyPlayingTrack().getArtist();
-        System.out.println(artist);
-        String artistAlbum = mainView.getCurrentlyPlayingTrack().getArtistAlbum();
-        System.out.println(artistAlbum);
-        String album = mainView.getAlbumLabel().getText();
-        System.out.println(album);
-        Track track = mainView.getMusicLibrary().getTrackByDetails(title, artist, album);
+        // Il brano in riproduzione è già disponibile direttamente: non serve ricercarlo
+        // per titolo/artista/album (la ricerca era anche fragile, poteva restituire null
+        // e mandare in NullPointerException il codice sotto)
+        Track track = mainView.getCurrentlyPlayingTrack();
+        String title = track.getTitle();
+        String artist = track.getArtist();
+        String artistAlbum = track.getArtistAlbum();
 
         // Check if the title or artist is empty
         if (title == null || title.isEmpty() || artist == null || artist.isEmpty()) {

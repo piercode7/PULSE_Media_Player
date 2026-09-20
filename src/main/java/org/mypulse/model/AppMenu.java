@@ -67,32 +67,10 @@ public class AppMenu {
         scanItem.setOnAction(event ->{ scanAction.run();allViews.postInit();}
 );
 
-        // Aggiungere l'azione di uscita
-// Aggiungere l'azione di uscita
-        exitItem.setOnAction(event -> {
-            Alert confirmExit = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmExit.setTitle("Conferma uscita");
-            confirmExit.setHeaderText("Vuoi uscire dall'applicazione?");
-            confirmExit.setContentText("Se confermi, la libreria musicale verrà salvata prima di chiudere.");
+        // Aggiungere l'azione di uscita (stesso dialogo usato anche alla chiusura con la X,
+        // vedi confirmAndExit più sotto)
+        exitItem.setOnAction(event -> confirmAndExit(window));
 
-            ButtonType saveAndExitButton = new ButtonType("Salva e Esci");
-            ButtonType exitWithoutSavingButton = new ButtonType("Esci senza salvare");
-            ButtonType cancelButton = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-            confirmExit.getButtonTypes().setAll(saveAndExitButton, exitWithoutSavingButton, cancelButton);
-
-            Optional<ButtonType> result = confirmExit.showAndWait();
-            if (result.isPresent()) {
-                if (result.get() == saveAndExitButton) {
-                    // Richiama l'azione di salvataggio
-                    saveLibraryWithoutConfirmation(window);
-                    Platform.exit(); // Chiude l'applicazione dopo il salvataggio
-                } else if (result.get() == exitWithoutSavingButton) {
-                    Platform.exit(); // Chiude l'applicazione senza salvare
-                }
-                // Se si clicca su "Annulla", non si fa nulla
-            }
-        });
         // Aggiungere l'azione di salvataggio con nome predefinito
         saveItem.setOnAction(event -> saveLibraryWithDefaultName(window));
 
@@ -180,6 +158,32 @@ public class AppMenu {
 
 
 
+    // Dialogo di conferma uscita: usato sia dalla voce di menu "Esci" sia dalla chiusura
+    // della finestra con la X, che prima non passava da qui e non salvava nulla
+    public void confirmAndExit(Window window) {
+        Alert confirmExit = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmExit.setTitle("Conferma uscita");
+        confirmExit.setHeaderText("Vuoi uscire dall'applicazione?");
+        confirmExit.setContentText("Se confermi, la libreria musicale verrà salvata prima di chiudere.");
+
+        ButtonType saveAndExitButton = new ButtonType("Salva e Esci");
+        ButtonType exitWithoutSavingButton = new ButtonType("Esci senza salvare");
+        ButtonType cancelButton = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        confirmExit.getButtonTypes().setAll(saveAndExitButton, exitWithoutSavingButton, cancelButton);
+
+        Optional<ButtonType> result = confirmExit.showAndWait();
+        if (result.isPresent()) {
+            if (result.get() == saveAndExitButton) {
+                saveLibraryWithoutConfirmation();
+                Platform.exit(); // Chiude l'applicazione dopo il salvataggio
+            } else if (result.get() == exitWithoutSavingButton) {
+                Platform.exit(); // Chiude l'applicazione senza salvare
+            }
+            // Se si clicca su "Annulla", non si fa nulla: la finestra resta aperta
+        }
+    }
+
     // Metodo per salvare la libreria con nome predefinito
     private void saveLibraryWithDefaultName(Window window) {
         File defaultFile = new File(SAVE_DIRECTORY, DEFAULT_SAVE_FILE);
@@ -203,7 +207,7 @@ public class AppMenu {
     }
 
     // Metodo per salvare la libreria con nome predefinito senza conferma di sovrascrittura
-    private void saveLibraryWithoutConfirmation(Window window) {
+    private void saveLibraryWithoutConfirmation() {
         File defaultFile = new File(SAVE_DIRECTORY, DEFAULT_SAVE_FILE);
 
         // Salva direttamente il file, sovrascrivendo se già esiste

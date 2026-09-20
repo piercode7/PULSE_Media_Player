@@ -47,6 +47,8 @@ public class MainView extends Application {
     private TrackTableView trackTableView;
     private ImageCoverView imageCoverView;
     private LyricsController lyricsController;
+    private MediaPlayerController mediaPlayerControl;
+    private AppMenu appMenu;
     private Button searchButton;
     private SearchFrame searchFrame;
     private String currentTableMode;
@@ -124,7 +126,7 @@ public class MainView extends Application {
         Runnable scanAction = () -> musicController.scanMusicFolder();
 
 // Creare il menu e passare l'azione di scansione, la libreria musicale, MainView, e AllViews
-        AppMenu appMenu = new AppMenu(scanAction, musicLibrary, this, allViews);
+        appMenu = new AppMenu(scanAction, musicLibrary, this, allViews);
         MenuBar menuBar = appMenu.createMenuBar(primaryStage);
         menuBar.setStyle("-fx-background-color: #333333; -fx-text-fill: white;");
 
@@ -280,7 +282,7 @@ public class MainView extends Application {
         // Crea il MediaPlayerController
 // Crea il MediaPlayerController
         // Media player at the bottom
-        MediaPlayerController mediaPlayerControl = new MediaPlayerController(musicLibrary, this, allViews);
+        mediaPlayerControl = new MediaPlayerController(musicLibrary, this, allViews);
         mediaPlayerControl.setId("bottom"); // Assegna un ID al MediaPlayerController
 
         // Aggiungi il media player in basso al BorderPane
@@ -667,7 +669,27 @@ public class MainView extends Application {
 
         primaryStage.setScene(scene);
         primaryStage.setTitle("Pulse");
+
+        // Chiudere con la X passava prima direttamente per la chiusura della finestra,
+        // senza mai chiedere se salvare la libreria (a differenza di File > Esci): ora
+        // usa lo stesso dialogo, e consuma l'evento perché è confirmAndExit stesso a
+        // decidere se e quando chiudere davvero (via Platform.exit())
+        primaryStage.setOnCloseRequest(event -> {
+            event.consume();
+            appMenu.confirmAndExit(primaryStage);
+        });
+
         primaryStage.show();
+    }
+
+    @Override
+    public void stop() {
+        // Punto unico di rilascio delle risorse native del MediaPlayer, chiamato dal
+        // runtime JavaFX per qualunque via si esca dall'applicazione (X, menu Esci, ecc.):
+        // prima il MediaPlayer non veniva mai rilasciato alla chiusura dell'app
+        if (mediaPlayerControl != null) {
+            mediaPlayerControl.releaseMediaPlayer();
+        }
     }
 
     // Method to populate the playlist ListView

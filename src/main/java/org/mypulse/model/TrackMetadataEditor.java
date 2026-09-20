@@ -25,7 +25,9 @@ import org.mypulse.view.components.AllViews;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TrackMetadataEditor {
@@ -265,13 +267,12 @@ public class TrackMetadataEditor {
     }
 
     private void saveMetadata() {
-        // Store old artist and album names
-        String oldArtist = getUnifiedValue(tracks.stream().map(Track::getArtistAlbum).collect(Collectors.toList()));
-        String oldAlbum = getUnifiedValue(tracks.stream().map(Track::getAlbumName).collect(Collectors.toList()));
-
-        // Collect new metadata values to determine if artist or album was changed
-        String newArtist = artistField.getText();
-        String newAlbum = albumField.getText();
+        // Nome dell'album da usare per aggiornare la tabella dopo il salvataggio: se il
+        // campo Album non è stato effettivamente modificato (checkbox non spuntata, o
+        // spuntata ma il testo è rimasto "*" perché i brani avevano album diversi),
+        // albumField.getText() può valere "*" e non un nome di album reale
+        String newAlbum = (albumCheckBox.isSelected() && !albumField.getText().equals("*"))
+                ? albumField.getText() : tracks.get(0).getAlbumName();
 
         // Prompt user to choose between modifying file metadata or only updating the track instances
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -322,6 +323,13 @@ public class TrackMetadataEditor {
 
 
     private void createNewTrackInstances() {
+        // Il brano attualmente in riproduzione (e la coda) sono tracciati per identità di
+        // oggetto: ricreando le istanze qui sotto, senza questa mappa resterebbero agganciati
+        // all'istanza vecchia appena rimossa dalla libreria (evidenziazione della riga persa,
+        // riproduzione della coda arenata). Il filePath non è modificabile in questo editor,
+        // quindi è una chiave stabile per ritrovare la nuova istanza corrispondente.
+        Map<String, Track> newTrackByPath = new HashMap<>();
+
         for (Track track : tracks) {
             // Remove the old track from the library
             mainView.getMusicLibrary().removeTrack(track);
@@ -339,8 +347,13 @@ public class TrackMetadataEditor {
                 }
             }
 
-            // Collect metadata fields for the new Track
-            String title = titleCheckBox.isSelected() ? titleField.getText() : track.getTitle();
+            // Collect metadata fields for the new Track.
+            // Se i brani selezionati avevano valori diversi per un campo, il campo mostra
+            // "*" (vedi getUnifiedValue): applicarlo alla cieca quando la checkbox è
+            // spuntata ma il testo non è stato toccato scriverebbe "*" come valore reale
+            // in libreria. Va applicato solo un valore effettivamente digitato dall'utente.
+            String title = (titleCheckBox.isSelected() && !titleField.getText().equals("*"))
+                    ? titleField.getText() : track.getTitle();
             Integer trackNumber = track.getTrackNumber();
             try {
                 if (trackNumberCheckBox.isSelected()) {
@@ -362,10 +375,14 @@ public class TrackMetadataEditor {
             String filePath = track.getFilePath();
             Integer duration = track.getDuration();
 
-            String genre = genreCheckBox.isSelected() ? genreField.getText() : track.getGenre();
-            String artistAlbum = albumArtistCheckBox.isSelected() ? albumArtistField.getText() : track.getArtistAlbum();
-            String artist = artistCheckBox.isSelected() ? artistField.getText() : track.getArtist();
-            String albumName = albumCheckBox.isSelected() ? albumField.getText() : track.getAlbumName();
+            String genre = (genreCheckBox.isSelected() && !genreField.getText().equals("*"))
+                    ? genreField.getText() : track.getGenre();
+            String artistAlbum = (albumArtistCheckBox.isSelected() && !albumArtistField.getText().equals("*"))
+                    ? albumArtistField.getText() : track.getArtistAlbum();
+            String artist = (artistCheckBox.isSelected() && !artistField.getText().equals("*"))
+                    ? artistField.getText() : track.getArtist();
+            String albumName = (albumCheckBox.isSelected() && !albumField.getText().equals("*"))
+                    ? albumField.getText() : track.getAlbumName();
 
             Integer releaseYear = track.getReleaseYear();
             try {
@@ -381,7 +398,9 @@ public class TrackMetadataEditor {
             // Retrieve or create the album
             Album album = mainView.getMusicLibrary().getAlbumByName(albumName);
             if (album == null) {
-                album = new Album(albumName, artistAlbum, coverImage, filePath);
+                // Nuovo album (es. rinominato): non esiste ancora un coverImagePath su
+                // disco per questo nome, il percorso del file mp3 non è quella cosa
+                album = new Album(albumName, artistAlbum, coverImage, null);
                 mainView.getMusicLibrary().addAlbum(album);
             }
 
@@ -390,15 +409,39 @@ public class TrackMetadataEditor {
                 album.setCoverImage(newCoverImage);
             }
 
-            String lyrics = lyricsCheckBox.isSelected() ? lyricsArea.getText() : track.getLyrics();
-            String composer = composerCheckBox.isSelected() ? composerField.getText() : track.getComposer();
+            String lyrics = (lyricsCheckBox.isSelected() && !lyricsArea.getText().equals("*"))
+                    ? lyricsArea.getText() : track.getLyrics();
+            String composer = (composerCheckBox.isSelected() && !composerField.getText().equals("*"))
+                    ? composerField.getText() : track.getComposer();
 
             // Create a new Track instance using the constructor
             Track newTrack = new Track(title, trackNumber, discNumber, filePath, duration, genre, artistAlbum, artist, albumName, releaseYear, coverImage, album, lyrics, composer);
 
+            // Il costruttore non porta bitrate/formato (letti dallo scanner, non modificabili
+            // qui) né il play count: senza riportarli esplicitamente si perdevano ad ogni salvataggio
+            newTrack.setBitrate(track.getBitrate());
+            newTrack.setFormat(track.getFormat());
+            newTrack.setPlayCount(track.getPlayCount());
+
             // Add the new track to the library and album
             mainView.getMusicLibrary().addTrack(newTrack);
             album.addTrack(newTrack);
+
+            newTrackByPath.put(filePath, newTrack);
+        }
+
+        // Se il brano in riproduzione è tra quelli appena modificati, aggancia il
+        // riferimento e la coda alla nuova istanza (vedi commento sopra)
+        Track currentlyPlaying = mainView.getCurrentlyPlayingTrack();
+        if (currentlyPlaying != null && newTrackByPath.containsKey(currentlyPlaying.getFilePath())) {
+            mainView.setCurrentlyPlayingTrack(newTrackByPath.get(currentlyPlaying.getFilePath()));
+        }
+        List<Track> queuedTracks = mainView.getQueueTracks();
+        for (int i = 0; i < queuedTracks.size(); i++) {
+            Track replacement = newTrackByPath.get(queuedTracks.get(i).getFilePath());
+            if (replacement != null) {
+                queuedTracks.set(i, replacement);
+            }
         }
     }
 

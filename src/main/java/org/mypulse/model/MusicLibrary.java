@@ -186,13 +186,19 @@ public class MusicLibrary implements Serializable {
     // Metodo per ottenere un brano in base a titolo, artista e album
     public Track getTrackByDetails(String title, String artist, String album) {
         for (Track track : allTracks) {
-            if (track.getTitle().equalsIgnoreCase(title) &&
-                    track.getArtist().equalsIgnoreCase(artist) &&
-                    track.getAlbumName().equalsIgnoreCase(album)) {
+            // Il campo "artista" del brano (a differenza di artistAlbum) può essere null
+            // se il tag ARTIST non era presente nel file: equalsIgnoreCase diretto NPEava
+            if (equalsIgnoreCaseSafe(track.getTitle(), title) &&
+                    equalsIgnoreCaseSafe(track.getArtist(), artist) &&
+                    equalsIgnoreCaseSafe(track.getAlbumName(), album)) {
                 return track; // Restituisce il brano corrispondente
             }
         }
         return null; // Restituisce null se non è stato trovato alcun brano con i dettagli forniti
+    }
+
+    private boolean equalsIgnoreCaseSafe(String a, String b) {
+        return a == null ? b == null : a.equalsIgnoreCase(b);
     }
 
     public void clearLibrary() {

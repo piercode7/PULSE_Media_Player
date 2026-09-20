@@ -26,9 +26,12 @@ public class MusicScanner {
         this.albumsMap = new HashMap<>();
     }
     public void scanDirectory(String directoryPath) {
-        // Cancella il contenuto della cartella media prima di iniziare una nuova scansione
-        clearMediaDirectory(new File(mediaFolderPath));
-
+        // Non si cancella più la cartella media ad ogni scansione: lo si faceva
+        // incondizionatamente, quindi ri-scansionare (o scansionare una cartella diversa)
+        // cancellava anche le copertine degli album già presenti in libreria da una
+        // sessione precedente, che restavano orfane pur avendo ancora i loro mp3 intatti.
+        // saveCoverImage() scrive comunque su un percorso deterministico per (artista,
+        // album), quindi le copertine vengono sovrascritte correttamente se ritrovate.
         File directory = new File(directoryPath);
         if (directory.exists() && directory.isDirectory()) {
             processDirectory(directory);
@@ -110,15 +113,20 @@ public class MusicScanner {
                     title = "Titolo Sconosciuto"; // Default value for empty tracks
                 }
 
-                Integer trackNumberInt = (trackNumber != null && !trackNumber.isEmpty()) ? Integer.parseInt(trackNumber) : null;
-                Integer discNumberInt = (discNumber != null && !discNumber.isEmpty()) ? Integer.parseInt(discNumber) : 1;
+                // parseLeadingInt gestisce anche i formati "3/12" (traccia/totale) molto
+                // comuni nei tag TRACK/DISC: un parseInt diretto ci sarebbe andato in
+                // NumberFormatException, scartando l'intero file dal catch più esterno
+                Integer trackNumberInt = parseLeadingInt(trackNumber);
+                Integer discNumberInt = parseLeadingInt(discNumber);
+                if (discNumberInt == null) {
+                    discNumberInt = 1;
+                }
 
                 int durationSeconds = (int) audioHeader.getTrackLength();
 
                 Integer releaseYear = null;
                 if (year != null && !year.isEmpty()) {
-                    String[] parts = year.split("-");
-                    releaseYear = Integer.parseInt(parts[0]);
+                    releaseYear = parseLeadingInt(year.split("-")[0]);
                 }
 
                 String genreValue = (genre != null && !genre.isEmpty()) ? genre : null;
@@ -188,6 +196,24 @@ public class MusicScanner {
     }
 
     // Metodo per aggiornare il genere dell'album
+    // Estrae il numero intero iniziale da valori come "3", "3/12" o " 3 ": molti tag
+    // TRACK/DISC/YEAR usano la forma "numero/totale" o hanno spazi/rumore attorno.
+    // Ritorna null se non c'è alcuna cifra da estrarre, invece di lanciare un'eccezione.
+    private Integer parseLeadingInt(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        String digits = value.trim().split("[^0-9]")[0];
+        if (digits.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private void updateAlbumGenre(Album album) {
         Set<String> genres = new HashSet<>();
         for (Track track : album.getTracks()) {
@@ -202,18 +228,6 @@ public class MusicScanner {
             album.setGenre("Misto"); // Set "Misto" if there are multiple genres
         } else {
             album.setGenre(null); // No genre information available
-        }
-    }
-
-    // Metodo per cancellare il contenuto della cartella media
-    private void clearMediaDirectory(File directory) {
-        if (directory.exists() && directory.isDirectory()) {
-            for (File file : directory.listFiles()) {
-                if (file.isDirectory()) {
-                    clearMediaDirectory(file); // Cancella ricorsivamente le sottocartelle
-                }
-                file.delete(); // Cancella i file
-            }
         }
     }
 
