@@ -182,6 +182,8 @@ public class PlaylistEditor {
         // Chiamata al MainView per aggiornare la tabella delle playlist
         mainView.updatePlaylistTableView();
 
+        mainView.autoSaveLibrary();
+
         // Mostra un messaggio di conferma
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Salvataggio");

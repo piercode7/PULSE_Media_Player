@@ -117,6 +117,10 @@ public class ImageCoverView {
         for (Track track : mainView.getMusicLibrary().getTracksByAlbum(album.getName())) {
             track.setCoverImage(newCoverImage);
         }
+        // La copertina è già stata cambiata in memoria qui sopra indipendentemente da cosa
+        // sceglierà l'utente nel dialogo sotto (anche "Annulla" non la ripristina), quindi
+        // il salvataggio automatico va fatto subito, non dentro uno dei rami del dialogo
+        mainView.autoSaveLibrary();
 
         Alert alert = Utils.createAlert(Alert.AlertType.CONFIRMATION, "Modifica Metadati", "Vuoi aggiornare anche i metadati effettivi dei brani associati?", "Questa azione modificherà permanentemente i file audio.");
         ButtonType modifyFileButton = new ButtonType("Modifica file");

@@ -65,7 +65,9 @@ Linux, macOS e Windows.
 - Editor metadati (titolo, artista, album, genere, testi, copertina, ...)
 - Ricerca su artisti/album/brani
 - Copertine album da Spotify (richiede credenziali API personali) e testi da Genius
-  (script Python di supporto in `src/main/resources/get_lyrics.py`)
+  (script Python di supporto in `src/main/resources/get_lyrics.py`, richiede
+  `python3` con i pacchetti `requests` e `beautifulsoup4`:
+  `pip install requests beautifulsoup4`)
 
 ## Note
 

@@ -7,24 +7,32 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.datatype.Artwork;
 
+import org.mypulse.util.Utils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class MusicScanner {
 
     private MusicLibrary musicLibrary;
-    private Map<String, Album> albumsMap; // Mappa per gli album unici
     private final String mediaFolderPath = "Pulse/media/";
+
+    // Contatori della scansione in corso, azzerati ad ogni scanDirectory() e usati
+    // per il riepilogo finale invece di stampare una riga per ogni singolo file
+    private int filesFound;
+    private int tracksAdded;
+    private int tracksSkippedDuplicate;
+    private int tracksSkippedNoTag;
+    private int tracksSkippedError;
+    private int albumsCreated;
 
     public MusicScanner(MusicLibrary musicLibrary) {
         this.musicLibrary = musicLibrary;
-        this.albumsMap = new HashMap<>();
     }
+
     public void scanDirectory(String directoryPath) {
         // Non si cancella più la cartella media ad ogni scansione: lo si faceva
         // incondizionatamente, quindi ri-scansionare (o scansionare una cartella diversa)
@@ -33,33 +41,39 @@ public class MusicScanner {
         // saveCoverImage() scrive comunque su un percorso deterministico per (artista,
         // album), quindi le copertine vengono sovrascritte correttamente se ritrovate.
         File directory = new File(directoryPath);
-        if (directory.exists() && directory.isDirectory()) {
-            processDirectory(directory);
-
-            // Stampa tutti gli album creati
-            printAllAlbums();
-        } else {
-            System.out.println("Il percorso specificato non è una directory valida.");
+        if (!directory.exists() || !directory.isDirectory()) {
+            Utils.logSeparator();
+            System.out.println("[Scansione] Percorso non valido: " + directoryPath);
+            return;
         }
+
+        Utils.logSeparator();
+        System.out.println("=== Scansione avviata: " + directoryPath + " ===");
+        long startTime = System.currentTimeMillis();
+        filesFound = 0;
+        tracksAdded = 0;
+        tracksSkippedDuplicate = 0;
+        tracksSkippedNoTag = 0;
+        tracksSkippedError = 0;
+        albumsCreated = 0;
+
+        processDirectory(directory);
+
+        printScanSummary(directoryPath, System.currentTimeMillis() - startTime);
     }
 
-    // Metodo per stampare le informazioni sugli album
-    private void printAllAlbums() {
-        System.out.println("=== Album Trovati ===");
-        for (Album album : albumsMap.values()) {
-            System.out.println("Album: " + album.getName());
-            System.out.println("Artista Album: " + album.getArtistAlbum());
-            System.out.println("Genere: " + album.getGenre());
-
-            // Stampa i brani associati a questo album
-            System.out.println("Brani:");
-            for (Track track : album.getTracks()) {
-                System.out.println("  - Traccia " + track.getTrackNumber() + ": " + track.getTitle());
-            }
-            System.out.println("Path - " + album.getCoverImagePath());
-
-            System.out.println("------------------------------");
-        }
+    // Riepilogo finale con i numeri della scansione, al posto del vecchio printAllAlbums()
+    // che in realtà non stampava mai nulla di utile (scorreva una mappa mai popolata)
+    private void printScanSummary(String directoryPath, long elapsedMs) {
+        System.out.println("=== Scansione completata: " + directoryPath + " ===");
+        System.out.println("File .mp3 trovati:        " + filesFound);
+        System.out.println("Brani aggiunti:            " + tracksAdded);
+        System.out.println("Brani già presenti:        " + tracksSkippedDuplicate + "  (stesso percorso già in libreria)");
+        System.out.println("Brani senza tag ID3:       " + tracksSkippedNoTag + "  (saltati)");
+        System.out.println("Brani con errore:          " + tracksSkippedError + "  (saltati, vedi sopra)");
+        System.out.println("Nuovi album creati:        " + albumsCreated);
+        System.out.printf("Durata scansione:          %.1f s%n", elapsedMs / 1000.0);
+        System.out.println("=".repeat(40));
     }
 
     private void processDirectory(File directory) {
@@ -70,6 +84,7 @@ public class MusicScanner {
                 if (file.isDirectory()) {
                     processDirectory(file); // Chiamata ricorsiva
                 } else if (file.isFile() && file.getName().toLowerCase().endsWith(".mp3")) {
+                    filesFound++;
                     extractAndAddTrack(file);
                 }
             }
@@ -145,17 +160,21 @@ public class MusicScanner {
                 // Check if the album already exists
                 Album album = musicLibrary.getAlbumByName(albumName);
                 if (album == null) {
-                    // Create a new album
+                    // Create a new album. Non stampiamo invece nulla quando l'album esiste
+                    // già: è il caso normale (gli altri brani dello stesso album), non un
+                    // segnale utile, e prima veniva stampato una volta per ogni brano
                     album = new Album(albumName, artistAlbum, coverImage, coverImagePath);
                     musicLibrary.addAlbum(album); // Add the album to the library
-                } else {
-                    System.out.println("Album già presente: " + albumName);
+                    albumsCreated++;
+                    System.out.println("[Album] Nuovo album: \"" + albumName + "\" — " + artistAlbum);
                 }
 
                 // Check if the track already exists
                 Track existingTrack = musicLibrary.getTrackByFilePath(file.getAbsolutePath());
                 if (existingTrack != null) {
-                    System.out.println("Brano già presente: " + title + " - " + file.getAbsolutePath());
+                    // Contato ma non stampato riga per riga: su una libreria già scansionata
+                    // sarebbe la stragrande maggioranza dei file, il totale basta nel riepilogo
+                    tracksSkippedDuplicate++;
                     return; // Exit if the track already exists
                 }
 
@@ -183,19 +202,25 @@ public class MusicScanner {
 
                 album.addTrack(track); // Add the track to the album
                 musicLibrary.addTrack(track); // Add the track to the music library
+                tracksAdded++;
 
                 // Update album genre based on tracks
                 updateAlbumGenre(album);
             } else {
-                System.out.println("Nessun tag trovato per il file: " + file.getAbsolutePath());
+                tracksSkippedNoTag++;
+                System.out.println("[Attenzione] Nessun tag ID3 trovato, brano saltato: " + file.getAbsolutePath());
             }
         } catch (Exception e) {
-            System.out.println("Errore durante l'elaborazione del file: " + file.getAbsolutePath());
+            tracksSkippedError++;
+            // Una riga di riepilogo leggibile subito sopra lo stack trace completo: gli
+            // errori sono l'evento raro (a differenza dei duplicati), quindi qui il
+            // dettaglio serve davvero per capire cosa non ha funzionato su quel file
+            System.out.println("[Errore] " + file.getAbsolutePath() + " — " + e.getClass().getSimpleName()
+                    + (e.getMessage() != null ? ": " + e.getMessage() : ""));
             e.printStackTrace();
         }
     }
 
-    // Metodo per aggiornare il genere dell'album
     // Estrae il numero intero iniziale da valori come "3", "3/12" o " 3 ": molti tag
     // TRACK/DISC/YEAR usano la forma "numero/totale" o hanno spazi/rumore attorno.
     // Ritorna null se non c'è alcuna cifra da estrarre, invece di lanciare un'eccezione.
@@ -214,6 +239,7 @@ public class MusicScanner {
         }
     }
 
+    // Metodo per aggiornare il genere dell'album
     private void updateAlbumGenre(Album album) {
         Set<String> genres = new HashSet<>();
         for (Track track : album.getTracks()) {

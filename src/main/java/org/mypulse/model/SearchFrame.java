@@ -1,5 +1,6 @@
 package org.mypulse.model;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Callback;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AlbumListView;
@@ -22,6 +24,11 @@ import org.mypulse.view.components.TrackTableView;
 import java.util.List;
 
 public class SearchFrame extends Stage {
+
+    // Dimensioni fisse della finestra (setResizable(false) più sotto): usate anche per
+    // calcolare la posizione centrata rispetto alla finestra principale
+    private static final double WIDTH = 1000;
+    private static final double HEIGHT = 500;
 
     private MusicLibrary musicLibrary;  // Riferimento alla libreria musicale
     private TextField searchField;
@@ -44,11 +51,20 @@ public class SearchFrame extends Stage {
         // Imposta il titolo del frame
         this.setTitle("Ricerca musica");
 
+        // Ancora la finestra di ricerca a quella principale: si centra sempre su di essa
+        // (vedi centerOverOwner(), richiamato ad ogni apertura) invece di comparire in una
+        // posizione arbitraria decisa dal sistema operativo, e si minimizza/torna in primo
+        // piano insieme ad essa sulla maggior parte dei sistemi
+        if (mainView.getPrimaryStage() != null) {
+            this.initOwner(mainView.getPrimaryStage());
+        }
+
         // Crea il campo di ricerca
         searchField = new TextField();
         searchField.setPromptText("Cerca artisti, album o brani...");
         searchField.setMaxWidth(Double.MAX_VALUE); // Imposta la larghezza massima dinamica
-        searchField.requestFocus();
+        // Il requestFocus() va fatto in showSearchFrame(), non qui: a questo punto la
+        // finestra non è ancora mai stata mostrata, quindi non avrebbe alcun effetto
 
         // Imposta la barra di ricerca in cima
         HBox searchBox = new HBox(searchField);
@@ -239,9 +255,13 @@ public class SearchFrame extends Stage {
 
                 // Ora che l'artista è selezionato, popola automaticamente la lista degli album
                 albumListViewMain.populateAlbumsByArtist(selectedArtist);
-                this.toBack();
-                searchField.requestFocus();
 
+                // Chiude la finestra di ricerca: la vista principale si è già aggiornata
+                // da sola sopra, non serve tenerla aperta (con initOwner impostato, un
+                // semplice toBack() non la manda più davvero dietro alla finestra
+                // principale su molti window manager, quindi va chiusa del tutto)
+                searchField.clear();
+                this.hide();
             }
         });
 
@@ -255,11 +275,10 @@ public class SearchFrame extends Stage {
     // Metodo per gestire il click su un album
     private void handleAlbumClick(MainView mainView) {
         albumListView.setOnMouseClicked(event -> {
-            Album selectedAlbum = albumListView.getSelectionModel().getSelectedItem();
-            if (selectedAlbum != null) {
+            Album clickedAlbum = albumListView.getSelectionModel().getSelectedItem();
+            if (clickedAlbum != null) {
                 // Recupera l'artista associato all'album selezionato
-                String selectedArtist = selectedAlbum.getArtistAlbum();
-                System.out.println("Artista e Album recuperati: " + selectedArtist + " - " + selectedAlbum.getName());
+                String selectedArtist = clickedAlbum.getArtistAlbum();
 
                 // Seleziona la voce "Artisti" nel menu principale
                 mainView.listViewMenu.getSelectionModel().select("Artisti");
@@ -267,23 +286,33 @@ public class SearchFrame extends Stage {
                 // Popola la lista degli artisti
                 artistListViewMain.populateArtists();
 
-                // Seleziona e scrolla fino all'artista associato all'album
+                // Seleziona e scrolla fino all'artista associato all'album: questo
+                // ricostruisce il percorso artista -> album nella vista principale
                 mainView.listViewArtist.getSelectionModel().select(selectedArtist);
                 mainView.listViewArtist.scrollTo(selectedArtist);
 
                 // Ora popola la lista degli album solo per quell'artista
                 albumListViewMain.populateAlbumsByArtist(selectedArtist);
 
-                // Seleziona l'album recuperato nella listViewAlbum
-                mainView.listViewAlbum.getSelectionModel().select(selectedAlbum);
-                mainView.listViewAlbum.scrollTo(selectedAlbum);
+                // Ritrova l'album dalla libreria per nome invece di riusare l'istanza
+                // della lista dei risultati di ricerca, come già fa handleTrackClick per
+                // il proprio album: garantisce che sia lo stesso identico oggetto ora
+                // presente in listViewAlbum, così la selezione qui sotto ha effetto
+                Album album = mainView.getMusicLibrary().getAlbumByName(clickedAlbum.getName());
+                if (album != null) {
+                    mainView.listViewAlbum.getSelectionModel().select(album);
+                    mainView.listViewAlbum.scrollTo(album);
 
-                // Ora che l'album è selezionato, popola automaticamente la lista dei brani
-                trackTableViewMain.populateTracksByAlbum(selectedAlbum.getName());
+                    // Popola e mostra la scaletta (tabella dei brani) dell'album
+                    trackTableViewMain.populateTracksByAlbum(album.getName());
+                }
 
-                // Metti il SearchFrame in secondo piano
-                this.toBack();
-                searchField.requestFocus();
+                // Chiude la finestra di ricerca: la vista principale si è già aggiornata
+                // da sola sopra, non serve tenerla aperta (con initOwner impostato, un
+                // semplice toBack() non la manda più davvero dietro alla finestra
+                // principale su molti window manager, quindi va chiusa del tutto)
+                searchField.clear();
+                this.hide();
             }
         });
     }
@@ -327,9 +356,12 @@ public class SearchFrame extends Stage {
                     mainView.tableViewTracks.scrollTo(selectedTrack);
                 }
 
-                // Porta il SearchFrame in secondo piano
-                this.toBack();
-                searchField.requestFocus();
+                // Chiude la finestra di ricerca: la vista principale si è già aggiornata
+                // da sola sopra, non serve tenerla aperta (con initOwner impostato, un
+                // semplice toBack() non la manda più davvero dietro alla finestra
+                // principale su molti window manager, quindi va chiusa del tutto)
+                searchField.clear();
+                this.hide();
             }
         });
     }
@@ -339,6 +371,26 @@ public class SearchFrame extends Stage {
 
     // Metodo per mostrare il frame
     public void showSearchFrame() {
+        centerOverOwner();
         this.show();
+        this.toFront();
+        this.requestFocus(); // Focus a livello di finestra (sistema operativo)
+
+        // Il focus sul campo di testo va richiesto dopo che la finestra ha
+        // effettivamente ricevuto il focus, non subito: prima veniva chiamato nel
+        // costruttore, prima ancora che la finestra fosse mai mostrata, quindi non
+        // aveva alcun effetto e bisognava cliccare manualmente sul campo per scrivere
+        Platform.runLater(searchField::requestFocus);
+    }
+
+    // Centra la finestra di ricerca sopra quella principale. Richiamato ad ogni apertura
+    // (non solo alla creazione) così, anche se l'utente l'ha spostata altrove l'ultima
+    // volta, si ritrova sempre in una posizione prevedibile invece che "a caso"
+    private void centerOverOwner() {
+        Window owner = getOwner();
+        if (owner != null) {
+            setX(owner.getX() + (owner.getWidth() - WIDTH) / 2);
+            setY(owner.getY() + (owner.getHeight() - HEIGHT) / 2);
+        }
     }
 }

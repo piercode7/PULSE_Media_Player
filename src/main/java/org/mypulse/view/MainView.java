@@ -20,6 +20,7 @@ import org.mypulse.view.components.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 public class MainView extends Application {
@@ -49,6 +50,7 @@ public class MainView extends Application {
     private LyricsController lyricsController;
     private MediaPlayerController mediaPlayerControl;
     private AppMenu appMenu;
+    private Stage primaryStage;
     private Button searchButton;
     private SearchFrame searchFrame;
     private String currentTableMode;
@@ -73,13 +75,14 @@ public class MainView extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage; // Serve come "owner" per le finestre ausiliarie (es. ricerca)
+
         // Inizializza la libreria e lo scanner musicale
         musicLibrary = new MusicLibrary();
         Utils utils = new Utils();
         queuedTracks = new ArrayList<>();
         musicScanner = new MusicScanner(musicLibrary);
         lyricsController = new LyricsController(this);
-        searchFrame = new SearchFrame(musicLibrary, this);
         currentTableMode = "";
 
 
@@ -392,6 +395,7 @@ public class MainView extends Application {
                         getAlbumCoverView().setImage(getDefaultImage()); // Reset to default image
 
                         System.out.println("Album \"" + selectedAlbum.getName() + "\" eliminato.");
+                        autoSaveLibrary();
                     }
                 });
             } else {
@@ -456,6 +460,7 @@ public class MainView extends Application {
                         listViewPlaylist.refresh();
 
                         System.out.println("Playlist \"" + selectedPlaylist.getName() + "\" eliminata.");
+                        autoSaveLibrary();
                     }
                 });
             } else {
@@ -481,6 +486,12 @@ public class MainView extends Application {
 
 
         listViewMenu.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                // Separa in console il log di questo cambio vista (Artisti/Album/Brani/
+                // Coda/Playlist) da quello dell'azione precedente
+                Utils.logSeparator();
+            }
+
             // Rimuovi tutte le viste attuali prima di aggiungere quella nuova
             gridPane.getChildren().removeAll(listViewArtist, listViewAlbum, listViewAlbumAll, tableViewTrackAll, albumCoverView, tableViewTrackAllInQueue, listViewPlaylist); // aggiungi listViewPlaylist se non è incluso
 
@@ -646,6 +657,7 @@ public class MainView extends Application {
                         listViewPlaylist.refresh();
 
                         System.out.println("Playlist \"" + selectedPlaylist.getName() + "\" eliminata.");
+                        autoSaveLibrary();
                     }
                 });
             } else {
@@ -734,6 +746,19 @@ public class MainView extends Application {
 
     public MusicLibrary getMusicLibrary() {
         return musicLibrary;
+    }
+
+    public Stage getPrimaryStage() {
+        return primaryStage;
+    }
+
+    // Punto unico da cui editor e dialoghi (metadati, copertine, playlist, ...) chiedono
+    // il salvataggio automatico della libreria dopo una modifica, senza dover conoscere
+    // AppMenu direttamente
+    public void autoSaveLibrary() {
+        if (appMenu != null) {
+            appMenu.autoSaveLibrary();
+        }
     }
 
     public TableView<Track> getTableViewTracks() {
@@ -869,6 +894,11 @@ public class MainView extends Application {
         getAllViews().refreshAllViews();
 
         System.out.println("Aggiornamento dettagli degli album completato.");
+
+        // Chiamato anche da TrackMetadataEditor dopo un salvataggio (che già fa il suo
+        // autoSaveLibrary): qui in più copre la voce di menu "Aggiorna dettagli album",
+        // che prima non salvava mai il nuovo genere calcolato per gli album
+        autoSaveLibrary();
     }
 
 
@@ -883,13 +913,19 @@ public class MainView extends Application {
     }
 
 
-    // Metodo per aprire o riportare in primo piano il frame di ricerca
+    // Metodo per aprire o riportare in primo piano il frame di ricerca. Un'unica istanza
+    // per tutta la sessione: prima ne veniva creata una nuova ad ogni click sul pulsante
+    // "Cerca" senza mai chiudere le precedenti, che restavano aperte (nascoste dietro le
+    // altre) accumulandosi per tutta la durata dell'app. musicLibrary è lo stesso oggetto
+    // per l'intera sessione (viene aggiornato in place da un caricamento/scansione, mai
+    // sostituito), quindi una singola SearchFrame vede sempre i dati aggiornati.
     private void openSearchFrame(MusicLibrary musicLibrary, MainView mainView) {
-// Always create a new instance of SearchFrame with the latest MusicLibrary
-        searchFrame = new SearchFrame(musicLibrary, mainView);
+        if (searchFrame == null) {
+            searchFrame = new SearchFrame(musicLibrary, mainView);
+        }
+        // toFront()/requestFocus() del campo di testo sono già gestiti dentro
+        // showSearchFrame()
         searchFrame.showSearchFrame();
-
-
     }
 
     public void updatePlaylistTableView() {
@@ -910,7 +946,21 @@ public class MainView extends Application {
 
 
     public static void main(String[] args) {
+        configureLogging();
         launch(args);
+    }
+
+    // Carica src/main/resources/logging.properties (finora presente ma mai letto da
+    // nessuna parte): senza questo, i log interni INFO/WARNING di jaudiotagger
+    // (uno per ogni frame ID3 letto) sommergono il riepilogo di scansione in console
+    private static void configureLogging() {
+        try (InputStream configStream = MainView.class.getResourceAsStream("/logging.properties")) {
+            if (configStream != null) {
+                LogManager.getLogManager().readConfiguration(configStream);
+            }
+        } catch (IOException e) {
+            System.out.println("Impossibile caricare logging.properties: " + e.getMessage());
+        }
     }
 
 

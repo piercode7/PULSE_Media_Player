@@ -30,6 +30,10 @@
     -fx-border-color: #555555; /* Bordo sottile */
     -fx-border-radius: 5px; /* Angoli arrotondati */
     -fx-background-radius: 5px; /* Angoli arrotondati */
+    /* Stesso problema e stessa correzione di dark-lyrics.css: senza un font esplicito,
+       un testo con parti in giapponese/cinese/coreano (es. nella tab Lyrics di questo
+       editor) veniva mostrato come quadrati invece dei caratteri veri */
+    -fx-font-family: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "MS Gothic", "Droid Sans Fallback", "Noto Sans", sans-serif;
 }
 
 

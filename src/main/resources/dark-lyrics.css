@@ -12,6 +12,15 @@
     -fx-prompt-text-fill: #aaaaaa; /* Colore del testo segnaposto */
     -fx-background-insets: 0;
     -fx-background-radius: 5;
+    /* Senza un font esplicito, JavaFX non passa automaticamente a un font capace di
+       ideogrammi per i caratteri che il font di default non copre (a differenza di un
+       browser): un testo con una parte in giapponese/cinese/coreano (intro, sezioni
+       bilingui) veniva mostrato come quadrati al posto dei caratteri veri. Questi sono
+       font "pan-Unicode" che includono anche i caratteri latini nello stesso file, quindi
+       il resto del testo non cambia aspetto. Verificato che risolve davvero il problema
+       (screenshot prima/dopo), non solo in teoria. Se nessuno di questi è installato si
+       torna al comportamento di prima, invariato per il testo solo latino. */
+    -fx-font-family: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "MS Gothic", "Droid Sans Fallback", "Noto Sans", sans-serif;
 }
 
 /* Stile del pulsante */

@@ -36,6 +36,13 @@ public class Utils {
         alert.showAndWait();
     }
 
+    // Stampa una riga vuota in console: usato all'inizio di ogni azione (cambio vista,
+    // scansione, avvio riproduzione, ecc.) per separarla visivamente dai log dell'azione
+    // precedente, invece di avere tutto attaccato senza soluzione di continuità
+    public static void logSeparator() {
+        System.out.println();
+    }
+
     // Metodo per creare un avviso (spostato qui dalla classe originale)
     public static Alert createAlert(Alert.AlertType type, String title, String headerText, String contentText) {
         Alert alert = new Alert(type);

@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class AppMenu {
@@ -27,6 +29,15 @@ public class AppMenu {
 
     // Directory predefinita per salvare il file
     private static final String SAVE_DIRECTORY = System.getProperty("user.dir"); // Directory corrente del programma
+
+    // Coda a thread singolo per il salvataggio automatico: le scritture su disco vengono
+    // eseguite in background (senza bloccare la UI) ma una alla volta, in ordine, così
+    // due autoSaveLibrary() ravvicinati non scrivono in modo concorrente sullo stesso file
+    private final ExecutorService autoSaveExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "pulse-autosave");
+        thread.setDaemon(true); // Non deve impedire la chiusura della JVM
+        return thread;
+    });
 
     // Costruttore che accetta un'azione di scansione e la libreria musicale
 // Costruttore che accetta un'azione di scansione, la libreria musicale, MainView e AllViews
@@ -64,8 +75,11 @@ public class AppMenu {
         MenuItem apiSpoti = new MenuItem("Inserisci API di Spotify");
 
         // Aggiungere l'azione di scansione
-        scanItem.setOnAction(event ->{ scanAction.run();allViews.postInit();}
-);
+        scanItem.setOnAction(event -> {
+            scanAction.run();
+            allViews.postInit();
+            autoSaveLibrary(); // I brani appena trovati non erano ancora mai stati salvati
+        });
 
         // Aggiungere l'azione di uscita (stesso dialogo usato anche alla chiusura con la X,
         // vedi confirmAndExit più sotto)
@@ -122,7 +136,7 @@ public class AppMenu {
                 musicLibrary.clearLibrary(); // Chiama il metodo per cancellare i dati
                 System.out.println("La libreria musicale è stata inizializzata.");
                 allViews.postInit();
-
+                autoSaveLibrary(); // La libreria svuotata va persistita, non solo in memoria
             }
         });
 
@@ -204,6 +218,23 @@ public class AppMenu {
             // Se il file non esiste, procedi con il salvataggio
             serializeLibrary(defaultFile);
         }
+    }
+
+    // Salva la libreria sul file predefinito in background, senza dialoghi né bloccare
+    // la UI. Va chiamato dopo ogni azione che modifica davvero i dati (editor metadati,
+    // copertine, playlist, scansione, eliminazioni, ...): con questo, il salvataggio
+    // manuale ("Salva" o il dialogo di conferma all'uscita) non serve più per non perdere
+    // le modifiche, resta solo come opzione esplicita (es. "Salva come" per esportare).
+    public void autoSaveLibrary() {
+        File defaultFile = new File(SAVE_DIRECTORY, DEFAULT_SAVE_FILE);
+        autoSaveExecutor.submit(() -> {
+            try {
+                SerializationUtils.serialize(musicLibrary, defaultFile.getAbsolutePath());
+                System.out.println("[Salvataggio automatico] Libreria aggiornata su " + defaultFile.getAbsolutePath());
+            } catch (IOException e) {
+                System.out.println("[Salvataggio automatico] Errore durante il salvataggio: " + e.getMessage());
+            }
+        });
     }
 
     // Metodo per salvare la libreria con nome predefinito senza conferma di sovrascrittura

@@ -19,6 +19,7 @@ import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.mypulse.util.LyricsFetcher;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AllViews;
 
@@ -103,9 +104,36 @@ public class TrackMetadataEditor {
         VBox root = new VBox(10, tabPane, buttonBox);
         root.setPadding(new Insets(15));
 
-        Scene scene = new Scene(root, 740, 670);
+        Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/dark-editor.css").toExternalForm());
         metadataStage.setScene(scene);
+
+        // Il layout è comunque fisso (campi a larghezza costante, niente che debba
+        // ridimensionarsi), quindi non ha senso lasciare la finestra ridimensionabile:
+        // si calcola la misura giusta una volta sola e si blocca lì.
+        //
+        // root.applyCss() + root.layout() PRIMA di sizeToScene() sono fondamentali: senza
+        // di essi sizeToScene() misura il contenuto prima che il CSS sia stato applicato
+        // (incluso il font per i caratteri giapponesi/cinesi/coreani nella tab Lyrics, che
+        // ha metriche diverse da quello di default), quindi calcolava una dimensione più
+        // piccola di quella vera - la finestra si apriva comunque troppo piccola.
+        root.applyCss();
+        root.layout();
+        metadataStage.sizeToScene();
+        metadataStage.setResizable(false);
+    }
+
+    // Collega un campo alla sua checkbox: la spunta si seleziona da sola non appena il
+    // testo digitato differisce dal valore originale (una vera modifica), invece di dover
+    // spuntarla a mano dopo aver scritto. Si scollega altrettanto da sola se si ritorna
+    // al valore originale digitando. Resta però possibile togliere la spunta a mano in
+    // qualunque momento (es. non si è convinti di una modifica) senza dover riscrivere il
+    // testo precedente: l'ascoltatore reagisce solo a un cambiamento del TESTO, non a un
+    // click sulla checkbox, quindi una spunta tolta a mano resta tolta finché non si
+    // riprende a digitare in quel campo.
+    private void bindCheckboxToChanges(TextInputControl field, CheckBox checkBox, String originalValue) {
+        field.textProperty().addListener((obs, oldValue, newValue) ->
+                checkBox.setSelected(!newValue.equals(originalValue)));
     }
 
     private VBox createEditableLyricsPane() {
@@ -113,15 +141,55 @@ public class TrackMetadataEditor {
         lyricsPane.setPadding(new Insets(15));
 
         // Create the TextArea for Lyrics
-        lyricsArea = new TextArea(getUnifiedValue(tracks.stream().map(Track::getLyrics).collect(Collectors.toList())));
-        lyricsArea.setPrefHeight(535); // Set preferred height for TextArea
+        String originalLyrics = getUnifiedValue(tracks.stream().map(Track::getLyrics).collect(Collectors.toList()));
+        lyricsArea = new TextArea(originalLyrics);
+        lyricsArea.setPrefHeight(500); // Set preferred height for TextArea
         lyricsArea.setEditable(true); // Allow editing
 
         lyricsCheckBox = new CheckBox("Modifica i testi");
+        bindCheckboxToChanges(lyricsArea, lyricsCheckBox, originalLyrics);
+
+        // Pulsante per recuperare il testo da Genius, come nella finestra dedicata
+        // (LyricsController): prima qui non c'era alcun modo per scaricarlo, solo per
+        // vedere/modificare quello già presente nei metadati
+        Button fetchLyricsButton = new Button("Fetch Lyrics");
+        fetchLyricsButton.setOnAction(event -> fetchLyricsFromGenius());
 
         // Add components to the lyrics pane
-        lyricsPane.getChildren().addAll(new Label("Lyrics:"), lyricsArea, lyricsCheckBox);
+        lyricsPane.getChildren().addAll(new Label("Lyrics:"), fetchLyricsButton, lyricsArea, lyricsCheckBox);
         return lyricsPane;
+    }
+
+    // Cerca il testo su Genius per il titolo/artista attualmente nei campi della tab
+    // Details, e lo mette nella TextArea (che fa scattare da sola la checkbox "Modifica i
+    // testi" tramite bindCheckboxToChanges, visto che il testo cambia). Ha senso solo con
+    // un titolo e un artista univoci: se si stanno modificando più brani con valori
+    // diversi per quei campi (mostrano "*"), non c'è un singolo brano per cui cercare.
+    private void fetchLyricsFromGenius() {
+        String titleValue = titleField.getText();
+        String artistValue = artistField.getText();
+
+        if (titleValue == null || titleValue.isEmpty() || titleValue.equals("*")
+                || artistValue == null || artistValue.isEmpty() || artistValue.equals("*")) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Titolo o artista non univoci");
+            alert.setHeaderText(null);
+            alert.setContentText("Per cercare il testo serve un titolo e un artista univoci. "
+                    + "Stai modificando più brani con valori diversi per questi campi (mostrano \"*\").");
+            alert.showAndWait();
+            return;
+        }
+
+        String fetched = LyricsFetcher.fetchLyrics(artistValue, titleValue);
+        if (fetched != null) {
+            lyricsArea.setText(fetched);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Testo non trovato");
+            alert.setHeaderText(null);
+            alert.setContentText("Non è stato possibile trovare il testo per \"" + titleValue + "\" di " + artistValue + ".");
+            alert.showAndWait();
+        }
     }
 
     private GridPane createEditableMetadataPane() {
@@ -133,51 +201,79 @@ public class TrackMetadataEditor {
         // Imposta la larghezza preferita
         double fieldWidth = 550; // Imposta la larghezza desiderata
 
-        // Editable Fields with Checkboxes
-        titleField = new TextField(getUnifiedValue(tracks.stream().map(Track::getTitle).collect(Collectors.toList())));
+        // Editable Fields with Checkboxes. Ogni campo tiene il proprio valore originale e
+        // collega la checkbox tramite bindCheckboxToChanges(): si seleziona da sola quando
+        // si scrive qualcosa di diverso dall'originale, invece di doverla spuntare a mano.
+        String originalTitle = getUnifiedValue(tracks.stream().map(Track::getTitle).collect(Collectors.toList()));
+        titleField = new TextField(originalTitle);
         titleField.setPrefWidth(fieldWidth); // Imposta la larghezza
         titleCheckBox = new CheckBox("");
+        bindCheckboxToChanges(titleField, titleCheckBox, originalTitle);
 
-        artistField = new TextField(getUnifiedValue(tracks.stream().map(Track::getArtist).collect(Collectors.toList())));
+        String originalArtist = getUnifiedValue(tracks.stream().map(Track::getArtist).collect(Collectors.toList()));
+        artistField = new TextField(originalArtist);
         artistField.setPrefWidth(fieldWidth);
         artistCheckBox = new CheckBox("");
+        bindCheckboxToChanges(artistField, artistCheckBox, originalArtist);
 
-        albumField = new TextField(getUnifiedValue(tracks.stream().map(Track::getAlbumName).collect(Collectors.toList())));
+        String originalAlbum = getUnifiedValue(tracks.stream().map(Track::getAlbumName).collect(Collectors.toList()));
+        albumField = new TextField(originalAlbum);
         albumField.setPrefWidth(fieldWidth);
         albumCheckBox = new CheckBox("");
+        bindCheckboxToChanges(albumField, albumCheckBox, originalAlbum);
 
-        albumArtistField = new TextField(getUnifiedValue(tracks.stream().map(Track::getArtistAlbum).collect(Collectors.toList())));
+        String originalAlbumArtist = getUnifiedValue(tracks.stream().map(Track::getArtistAlbum).collect(Collectors.toList()));
+        albumArtistField = new TextField(originalAlbumArtist);
         albumArtistField.setPrefWidth(fieldWidth);
         albumArtistCheckBox = new CheckBox("");
+        bindCheckboxToChanges(albumArtistField, albumArtistCheckBox, originalAlbumArtist);
 
-        composerField = new TextField(getUnifiedValue(tracks.stream().map(Track::getComposer).collect(Collectors.toList())));
+        String originalComposer = getUnifiedValue(tracks.stream().map(Track::getComposer).collect(Collectors.toList()));
+        composerField = new TextField(originalComposer);
         composerField.setPrefWidth(fieldWidth);
         composerCheckBox = new CheckBox("");
+        bindCheckboxToChanges(composerField, composerCheckBox, originalComposer);
 
-        genreField = new TextField(getUnifiedValue(tracks.stream().map(Track::getGenre).collect(Collectors.toList())));
+        String originalGenre = getUnifiedValue(tracks.stream().map(Track::getGenre).collect(Collectors.toList()));
+        genreField = new TextField(originalGenre);
         genreField.setPrefWidth(fieldWidth);
         genreCheckBox = new CheckBox("");
+        bindCheckboxToChanges(genreField, genreCheckBox, originalGenre);
 
-        yearField = new TextField(getUnifiedValue(tracks.stream().map(track -> track.getReleaseYear() != null ? track.getReleaseYear().toString() : "").collect(Collectors.toList())));
+        String originalYear = getUnifiedValue(tracks.stream().map(track -> track.getReleaseYear() != null ? track.getReleaseYear().toString() : "").collect(Collectors.toList()));
+        yearField = new TextField(originalYear);
         yearField.setPrefWidth(fieldWidth);
         yearCheckBox = new CheckBox("");
+        bindCheckboxToChanges(yearField, yearCheckBox, originalYear);
 
-        trackNumberField = new TextField(getUnifiedValue(tracks.stream().map(track -> track.getTrackNumber() != null ? track.getTrackNumber().toString() : "").collect(Collectors.toList())));
+        String originalTrackNumber = getUnifiedValue(tracks.stream().map(track -> track.getTrackNumber() != null ? track.getTrackNumber().toString() : "").collect(Collectors.toList()));
+        trackNumberField = new TextField(originalTrackNumber);
         trackNumberField.setPrefWidth(fieldWidth);
         trackNumberCheckBox = new CheckBox("");
+        bindCheckboxToChanges(trackNumberField, trackNumberCheckBox, originalTrackNumber);
 
-        discNumberField = new TextField(getUnifiedValue(tracks.stream().map(track -> track.getDiscNumber() != null ? track.getDiscNumber().toString() : "").collect(Collectors.toList())));
+        String originalDiscNumber = getUnifiedValue(tracks.stream().map(track -> track.getDiscNumber() != null ? track.getDiscNumber().toString() : "").collect(Collectors.toList()));
+        discNumberField = new TextField(originalDiscNumber);
         discNumberField.setPrefWidth(fieldWidth);
         discNumberCheckBox = new CheckBox("");
+        bindCheckboxToChanges(discNumberField, discNumberCheckBox, originalDiscNumber);
 
-        // Cover Image
+        // Cover Image. Stessa dimensione (300x300) della copertina nella finestra
+        // principale, per coerenza visiva, e riempie lo spazio vuoto che restava sotto i
+        // campi in questa tab (l'altezza della finestra è condivisa con la tab Lyrics,
+        // che ha bisogno di più spazio per la TextArea).
         coverImageView = new ImageView();
-        coverImageView.setFitWidth(100);
-        coverImageView.setFitHeight(100);
+        coverImageView.setFitWidth(300);
+        coverImageView.setFitHeight(300);
         coverImageView.setPreserveRatio(true);
 
-        boolean allTracksHaveSameCover = tracks.stream().map(Track::getCoverImage).distinct().count() == 1;
-        if (allTracksHaveSameCover && tracks.get(0).getCoverImage() != null) {
+        // Mostra sempre la copertina del primo brano come anteprima, non solo se tutti i
+        // brani selezionati hanno esattamente la stessa immagine: prima il controllo
+        // confrontava gli array di byte con equals() di default (identità di riferimento),
+        // quindi con più di un brano selezionato non risultava praticamente mai vera anche
+        // quando le copertine erano di fatto identiche - l'anteprima restava sempre vuota
+        // quando si modificava un album.
+        if (tracks.get(0).getCoverImage() != null) {
             coverImageView.setImage(new Image(new ByteArrayInputStream(tracks.get(0).getCoverImage())));
         }
 
@@ -290,9 +386,14 @@ public class TrackMetadataEditor {
                 // Modify file metadata and update the library
                 modifyFileMetadata();
                 createNewTrackInstances();
+                mainView.autoSaveLibrary();
             } else if (type == updateInstanceButton) {
                 // Only create new track instances without modifying the file
                 createNewTrackInstances();
+                mainView.autoSaveLibrary();
+            } else {
+                // Annulla: non è stata fatta nessuna modifica, non c'è nulla da salvare
+                return;
             }
 
             // Refresh the album details
@@ -402,6 +503,13 @@ public class TrackMetadataEditor {
                 // disco per questo nome, il percorso del file mp3 non è quella cosa
                 album = new Album(albumName, artistAlbum, coverImage, null);
                 mainView.getMusicLibrary().addAlbum(album);
+            } else {
+                // L'album esisteva già con questo nome (caso comune: si è modificato solo
+                // l'artista, non il nome dell'album). Senza questo l'artista nuovo veniva
+                // scritto solo sulle nuove istanze Track qui sotto, ma l'oggetto Album -
+                // da cui la lista a sinistra legge il nome dell'artista mostrato - restava
+                // con il valore vecchio per sempre, anche dopo il salvataggio.
+                album.setArtistAlbum(artistAlbum);
             }
 
             // If the cover was changed, update the album's cover

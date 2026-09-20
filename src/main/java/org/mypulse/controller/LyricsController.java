@@ -14,12 +14,10 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.mypulse.model.Track;
+import org.mypulse.util.LyricsFetcher;
 import org.mypulse.view.MainView;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Optional;
 
 public class LyricsController {
@@ -46,7 +44,6 @@ public class LyricsController {
         Track track = mainView.getCurrentlyPlayingTrack();
         String title = track.getTitle();
         String artist = track.getArtist();
-        String artistAlbum = track.getArtistAlbum();
 
         // Check if the title or artist is empty
         if (title == null || title.isEmpty() || artist == null || artist.isEmpty()) {
@@ -89,8 +86,11 @@ public class LyricsController {
 
         // Add action to the button
         fetchLyricsButton.setOnAction(event -> {
-            // Run the Python script to fetch lyrics
-            String lyrics = fetchLyricsFromPythonScript(artistAlbum, title);
+            // Run the Python script to fetch lyrics. Usa l'artista del brano (chi la
+            // canta davvero), non l'artista dell'album: per compilation/soundtrack
+            // l'artista album può essere "Various Artists" e costruirebbe un URL Genius
+            // sbagliato
+            String lyrics = LyricsFetcher.fetchLyrics(artist, title);
             if (lyrics != null) {
                 lyricsArea.setText(lyrics);
             } else {
@@ -131,12 +131,15 @@ public class LyricsController {
                         // Aggiorna solo l'istanza nella libreria
                         track.setLyrics(newLyrics);
                         System.out.println("Lyrics aggiornati nella libreria.");
+                        mainView.autoSaveLibrary();
                     } else if (result.get() == updateBothButton) {
                         // Aggiorna sia l'istanza nella libreria che i metadati del file
                         track.setLyrics(newLyrics);
                         updateLyricsInFile(track); // Metodo per aggiornare i metadati effettivi
                         System.out.println("Lyrics aggiornati nella libreria e nel file.");
+                        mainView.autoSaveLibrary();
                     }
+                    // Se si clicca su "Annulla", non c'è nulla da salvare
                 }
             }
         });
@@ -178,35 +181,7 @@ public class LyricsController {
         }
     }
 
-    // Method to run the Python script and fetch lyrics
-    private String fetchLyricsFromPythonScript(String artist, String songTitle) {
-        try {
-            // Build the command to run the Python script
-            ProcessBuilder processBuilder = new ProcessBuilder("python3", "get_lyrics.py", artist, songTitle);
-            processBuilder.directory(new File("src/main/resources")); // Adjust the path to where your script is located
-
-            // Start the process
-            Process process = processBuilder.start();
-
-            // Read the output of the Python script
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-
-            // Wait for the process to finish
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                return output.toString().trim(); // Return the lyrics
-            } else {
-                System.err.println("Error: Python script exited with code " + exitCode);
-                return null;
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+    // Il recupero dei lyrics (eseguendo get_lyrics.py) è ora in LyricsFetcher, condiviso
+    // con TrackMetadataEditor (che prima non aveva affatto questa funzione nella sua tab
+    // Lyrics)
 }

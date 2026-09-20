@@ -189,7 +189,7 @@ public class MediaPlayerController extends VBox {
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     Track selectedTrack = row.getItem();
-                    playSelectedTrack(selectedTrack); // Riproduci il brano selezionato
+                    playSelectedTrack(selectedTrack, "Play"); // Riproduci il brano selezionato
                     fillQueueWithTableTracks(tableView); // Riempie la coda con i brani presenti nella tabella
                 }
             });
@@ -217,6 +217,7 @@ public class MediaPlayerController extends VBox {
 
                     addToQueueItem.setOnAction(e -> {
                         if (!orderedSelectedTracks.isEmpty()) {
+                            Utils.logSeparator();
                             // Add selected tracks in the order they were selected
                             for (Track track : orderedSelectedTracks) {
                                 // Add each selected track to the end of the queue, preserving duplicates
@@ -316,6 +317,8 @@ public class MediaPlayerController extends VBox {
                                 mainView.getTableViewTracks().refresh();
                                 mainView.getTableViewTrackAll().refresh();
                                 mainView.getTableViewTrackAllInQueue().refresh();
+
+                                mainView.autoSaveLibrary();
                             }
                         } else {
                             System.out.println("No tracks selected for deletion.");
@@ -324,6 +327,7 @@ public class MediaPlayerController extends VBox {
 
                     playNextItem.setOnAction(e -> {
                         if (!orderedSelectedTracks.isEmpty()) {
+                            Utils.logSeparator();
                             int insertPosition = currentTrackIndex + 1;  // Insert immediately after the currently playing track
 
                             // Add selected tracks in the order they were selected
@@ -487,6 +491,7 @@ public class MediaPlayerController extends VBox {
                     System.out.println("Brano aggiunto alla playlist: " + playlistName);
                 }
             }
+            mainView.autoSaveLibrary();
         });
     }
 
@@ -528,12 +533,9 @@ public class MediaPlayerController extends VBox {
         // Ripristina e crea la nuova coda
         queuedTracks.clear();  // Svuota la coda esistente
         queuedTracks.addAll(currentTracks);  // Aggiungi i brani della tabella corrente alla coda
-
-        System.out.println("Coda aggiornata con " + queuedTracks.size() + " brani.");
-        System.out.println("Brani nella coda:");
-        for (Track track : queuedTracks) {
-            System.out.println(track.getTitle());
-        }
+        // Non si stampa più qui l'elenco completo della coda: il log di cosa parte
+        // (playSelectedTrack, action "Play") è già stato stampato dal doppio click
+        // che ha chiamato questo metodo, ed è quello che conta in console
 
         // Mantieni l'indice del brano corrente o imposta l'indice corretto se necessario
         if (mainView.getCurrentlyPlayingTrack() != null && queuedTracks.contains(mainView.getCurrentlyPlayingTrack())) {
@@ -544,7 +546,9 @@ public class MediaPlayerController extends VBox {
     }
 
     // Metodo per riprodurre un brano specifico
-    private void playSelectedTrack(Track selectedTrack) {
+    // "action" descrive perché parte questo brano (Play, Avanti, Indietro, Replay, ...)
+    // e viene stampato in console al posto del vecchio dump completo della coda
+    private void playSelectedTrack(Track selectedTrack, String action) {
         if (selectedTrack != null) {
             String trackPath = selectedTrack.getFilePath(); // Ottieni il percorso del file del brano
             File trackFile = new File(trackPath);
@@ -573,7 +577,7 @@ public class MediaPlayerController extends VBox {
                 mediaPlayer.setOnEndOfMedia(() -> {
                     if (replayButton.isSelected()) {
                         // If replay is on, replay the current track
-                        playSelectedTrack(queuedTracks.get(currentTrackIndex));
+                        playSelectedTrack(queuedTracks.get(currentTrackIndex), "Replay");
                     } else {
                         // Otherwise, play the next track in the queue
                         playNextTrack();
@@ -598,6 +602,9 @@ public class MediaPlayerController extends VBox {
                 // Imposta il brano corrente in riproduzione
                 mainView.setCurrentlyPlayingTrack(selectedTrack);
 
+                Utils.logSeparator();
+                System.out.println("[" + action + "] " + selectedTrack.getTitle() + " — " + selectedTrack.getArtist());
+
                 // Aggiorna le informazioni del brano tramite allViews
                 String title = selectedTrack.getTitle();
                 String artist = selectedTrack.getArtist(); // Aggiungi un metodo getArtist() al tuo modello Track se non c'è già
@@ -618,7 +625,7 @@ public class MediaPlayerController extends VBox {
     // Chiamato alla fine naturale di un brano (fine coda esclusa): qui il repeat-one va rispettato
     private void playNextTrack() {
         if (replayButton.isSelected()) {
-            playSelectedTrack(queuedTracks.get(currentTrackIndex));
+            playSelectedTrack(queuedTracks.get(currentTrackIndex), "Replay");
         } else {
             advanceToNextTrack();
         }
@@ -629,8 +636,9 @@ public class MediaPlayerController extends VBox {
     private void advanceToNextTrack() {
         if (currentTrackIndex < queuedTracks.size() - 1) {
             currentTrackIndex++;
-            playSelectedTrack(queuedTracks.get(currentTrackIndex));
+            playSelectedTrack(queuedTracks.get(currentTrackIndex), "Avanti");
         } else {
+            Utils.logSeparator();
             System.out.println("Fine della coda, nessun brano successivo da riprodurre.");
             // Optionally disable the ">>" button if you want to prevent navigation
             // nextButton.setDisable(true);
@@ -700,18 +708,29 @@ public class MediaPlayerController extends VBox {
     }
 
 
+    // Descrive il brano attualmente in riproduzione per i log di Pausa/Resume/Indietro,
+    // dove non viene creato un nuovo MediaPlayer e quindi playSelectedTrack() non passa
+    private String describeCurrentTrack() {
+        Track current = mainView.getCurrentlyPlayingTrack();
+        return current != null ? current.getTitle() + " — " + current.getArtist() : "";
+    }
+
     // Metodo per riprodurre o riprendere il brano
     private void playOrResumeTrack() {
         if (mediaPlayer != null && mediaPlayer.getStatus() == MediaPlayer.Status.PAUSED) {
             // Riprendi la riproduzione
             mediaPlayer.play();
             playButton.setText("Play");  // Cambia il testo del pulsante
+
+            Utils.logSeparator();
+            System.out.println("[Resume] " + describeCurrentTrack());
         } else {
             // Riproduci il primo brano della coda se non c'è nulla in riproduzione
             if (!queuedTracks.isEmpty()) {
                 currentTrackIndex = (currentTrackIndex == -1) ? 0 : currentTrackIndex;  // Imposta il primo brano se non è stato ancora selezionato
-                playSelectedTrack(queuedTracks.get(currentTrackIndex));  // Riproduci il brano
+                playSelectedTrack(queuedTracks.get(currentTrackIndex), "Play");  // Riproduci il brano
             } else {
+                Utils.logSeparator();
                 System.out.println("La coda è vuota. Aggiungi brani alla coda.");
             }
         }
@@ -722,6 +741,9 @@ public class MediaPlayerController extends VBox {
         if (mediaPlayer != null && mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
             mediaPlayer.pause();
             playButton.setText("Resume");  // Cambia il testo del pulsante
+
+            Utils.logSeparator();
+            System.out.println("[Pausa] " + describeCurrentTrack());
         }
     }
 
@@ -777,11 +799,15 @@ public class MediaPlayerController extends VBox {
             // Se la riproduzione è oltre i 2 secondi, ricomincia il brano corrente
             mediaPlayer.seek(Duration.ZERO);
             mediaPlayer.play();
+
+            Utils.logSeparator();
+            System.out.println("[Indietro] Riavvio: " + describeCurrentTrack());
         } else if (currentTrackIndex > 0) {
             // Se siamo all'inizio del brano, torna al brano precedente
             currentTrackIndex--;  // Torna al brano precedente
-            playSelectedTrack(queuedTracks.get(currentTrackIndex));  // Riproduci il brano precedente
+            playSelectedTrack(queuedTracks.get(currentTrackIndex), "Indietro");  // Riproduci il brano precedente
         } else {
+            Utils.logSeparator();
             System.out.println("Inizio della coda, nessun brano precedente da riprodurre.");
         }
     }
