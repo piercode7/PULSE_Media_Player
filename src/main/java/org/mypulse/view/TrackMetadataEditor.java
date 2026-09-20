@@ -1,4 +1,6 @@
-package org.mypulse.model;
+package org.mypulse.view;
+
+import org.mypulse.model.*;
 
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.ID3v24Tag;

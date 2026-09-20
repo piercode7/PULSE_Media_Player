@@ -1,4 +1,4 @@
-package org.mypulse.model;
+package org.mypulse.view.components;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

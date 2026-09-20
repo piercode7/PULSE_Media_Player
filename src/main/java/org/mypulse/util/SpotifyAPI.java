@@ -1,4 +1,4 @@
-package org.mypulse.model;
+package org.mypulse.util;
 
 import javafx.scene.control.Alert;
 import okhttp3.*;

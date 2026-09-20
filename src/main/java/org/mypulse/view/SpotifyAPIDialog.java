@@ -1,4 +1,4 @@
-package org.mypulse.model;
+package org.mypulse.view;
 
 import javafx.scene.control.TextInputDialog;
 

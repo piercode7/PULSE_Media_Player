@@ -1,4 +1,4 @@
-package org.mypulse.model;
+package org.mypulse.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

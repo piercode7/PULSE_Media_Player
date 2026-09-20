@@ -1,7 +1,6 @@
 package org.mypulse.view.components;
 
 import org.mypulse.model.Album;
-import org.mypulse.model.AlbumListCell;
 import org.mypulse.view.MainView;
 
 import java.util.ArrayList;

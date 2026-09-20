@@ -1,4 +1,6 @@
-package org.mypulse.model;
+package org.mypulse.view;
+
+import org.mypulse.model.*;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;

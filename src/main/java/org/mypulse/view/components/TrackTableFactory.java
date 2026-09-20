@@ -1,4 +1,6 @@
-package org.mypulse.model;
+package org.mypulse.view.components;
+
+import org.mypulse.model.*;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.SelectionMode;
