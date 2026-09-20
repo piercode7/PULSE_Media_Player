@@ -20,6 +20,7 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.mypulse.util.LyricsFetcher;
+import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AllViews;
 
@@ -106,6 +107,7 @@ public class TrackMetadataEditor {
 
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/dark-editor.css").toExternalForm());
+        ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
         metadataStage.setScene(scene);
 
         // Il layout è comunque fisso (campi a larghezza costante, niente che debba

@@ -1,125 +1,233 @@
+/* I colori (-bg-base, -accent, ecc.) arrivano da uno dei fogli theme-*.css (theme-dark,
+   theme-indigo, theme-amber, theme-light), aggiunto alla Scene di ciascuna finestra da
+   ThemeManager insieme a questo foglio strutturale - non con un @import fisso qui,
+   altrimenti il tema non potrebbe più essere cambiato a runtime dal selettore tema. */
+
 /* Generale */
 .root {
-    -fx-base: #1e1e1e; /* Colore di base scuro */
-    -fx-background-color: #1e1e1e;
-    -fx-text-fill: #ffffff; /* Colore del testo bianco */
+    -fx-base: -bg-base;
+    -fx-background-color: -bg-base;
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile del MenuBar (barra del menu in alto) */
 .menu-bar {
-    -fx-background-color: #333333; /* Sfondo del MenuBar scuro */
-    -fx-border-color: #555555; /* Bordi del MenuBar */
+    -fx-background-color: -bg-surface;
+    -fx-border-color: -border;
 }
 
 /* Stile delle voci del menu */
 .menu {
-    -fx-text-fill: white; /* Testo bianco per le voci del menu */
-    -fx-background-color: #333333; /* Sfondo scuro per le voci del menu */
+    -fx-text-fill: -text-primary;
+    -fx-background-color: -bg-surface;
 }
 
 /* Stile per il menu al passaggio del mouse */
 .menu:hover {
-    -fx-background-color: #444444; /* Sfondo leggermente più chiaro al passaggio del mouse */
+    -fx-background-color: -bg-elevated;
 }
 
 /* Stile per i MenuItem (elementi all'interno dei menu) */
 .menu-item {
-    -fx-text-fill: white; /* Testo bianco per i MenuItem */
-    -fx-background-color: #333333; /* Sfondo scuro per i MenuItem */
+    -fx-text-fill: -text-primary;
+    -fx-background-color: -bg-surface;
 }
 
 /* Stile per i MenuItem al passaggio del mouse */
 .menu-item:hover {
-    -fx-background-color: #444444; /* Sfondo leggermente più chiaro al passaggio del mouse */
+    -fx-background-color: -bg-elevated;
 }
 
 /* Stile per i MenuItem selezionati */
 .menu-item:selected {
-    -fx-background-color: #000000; /* Sfondo per i MenuItem selezionati */
-    -fx-text-fill: white; /* Testo bianco per i MenuItem selezionati */
+    -fx-background-color: -accent;
+    -fx-text-fill: -on-accent;
 }
 
 /* Stile delle separazioni (divider) nel menu */
 .separator {
-    -fx-background-color: #555555; /* Colore delle linee di separazione */
+    -fx-background-color: -border;
 }
 
-/* Stile dei pulsanti */
+/* Stile dei pulsanti: piatto, senza l'ombra pesante di prima - angoli più morbidi (8px,
+   non la "pillola" 999px dei pulsanti di trasporto del player, che qui risulterebbe
+   vistosa su un pulsante con testo) in linea con l'aspetto più moderno del resto */
 .button {
-    -fx-background-color: #333; /* Sfondo dei pulsanti */
-    -fx-text-fill: white; /* Testo dei pulsanti */
-    -fx-border-color: #555; /* Bordo del pulsante */
-    -fx-border-radius: 5px;
-    -fx-background-radius: 5px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 10, 0.5, 0, 2);
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 16px;
+    -fx-effect: none;
 }
 
 .button:hover {
-    -fx-background-color: #444; /* Colore più chiaro al passaggio del mouse */
-    -fx-border-color: #666;
+    -fx-background-color: -bg-elevated-hover;
+    -fx-border-color: -border;
+}
+
+.button:pressed {
+    -fx-background-color: -bg-elevated-pressed;
+}
+
+/* Pulsanti di trasporto (precedente/pausa/stop/successivo/repeat): circolari e senza
+   l'ombra generica dei pulsanti normali, più vicini a un player moderno (tipo Spotify/
+   Apple Music) restando però sui colori neutri del tema invece di introdurne di nuovi -
+   niente di vistoso, solo forma/icone diverse. */
+.transport-button {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-min-width: 34px;
+    -fx-min-height: 34px;
+    -fx-max-width: 34px;
+    -fx-max-height: 34px;
+    -fx-padding: 0;
+    -fx-effect: none;
+}
+
+/* Play resta l'azione primaria della barra: un po' più grande e riempito con l'accento
+   del tema invece del grigio neutro degli altri pulsanti di trasporto */
+.transport-button-primary {
+    -fx-background-color: -accent;
+    -fx-background-radius: 999px;
+    -fx-border-width: 0;
+    -fx-min-width: 44px;
+    -fx-min-height: 44px;
+    -fx-max-width: 44px;
+    -fx-max-height: 44px;
+    -fx-padding: 0;
+    -fx-effect: none;
+}
+
+.transport-button-primary:hover {
+    -fx-background-color: -accent-hover;
+}
+
+.transport-button-primary:pressed {
+    -fx-background-color: -accent-pressed;
+}
+
+/* Colore delle icone vettoriali (Polygon/Rectangle) dentro i pulsanti di trasporto,
+   legato ai token del tema invece che fisso nel codice Java */
+.icon-secondary {
+    -fx-fill: -text-primary;
+}
+
+.icon-on-accent {
+    -fx-fill: -on-accent;
 }
 
 /* Stile delle ListView */
 .list-view {
-    -fx-background-color: #202020; /* Sfondo scuro della lista */
-    -fx-border-color: #1d1d1d;
-    -fx-text-fill: white;
+    -fx-background-color: -bg-surface;
+    -fx-border-color: -border-subtle;
+    -fx-text-fill: -text-primary;
 }
 
 .list-cell {
-    -fx-background-color: #1d1d1d; /* Sfondo degli elementi */
-    -fx-text-fill: #d3d3d3; /* Colore del testo degli elementi */
+    -fx-background-color: -bg-surface;
+    -fx-text-fill: -text-primary;
+    /* Un po' più di respiro verticale del padding stretto di default: contribuiva
+       all'aspetto compresso/datato lamentato, specie ora che il testo è più grande */
+    -fx-padding: 8 10 8 10;
 }
 
 .list-cell:hover {
-    -fx-background-color: #1d1d1d; /* Colore più chiaro quando si passa il mouse su una cella */
+    -fx-background-color: -bg-elevated;
 }
 
 .list-cell:selected {
-    -fx-background-color: #0b0b0b; /* Colore degli elementi selezionati */
-    -fx-text-fill: #ffffff;
+    -fx-background-color: -accent;
+    -fx-text-fill: -on-accent;
+}
+
+/* Navigazione principale (Artisti/Album/Brani/Playlist/Coda): in grassetto e leggermente
+   più grande delle liste di contenuto, per una gerarchia più chiara invece che tutto
+   sullo stesso piano visivo */
+.nav-list .list-cell {
+    -fx-font-weight: bold;
+    -fx-font-size: 14.5px;
+}
+
+/* Etichette dentro celle con un layout personalizzato (setGraphic, es. AlbumListCell):
+   -fx-text-fill su .list-cell:selected sopra non le raggiunge, essendo Label figlie del
+   grafico e non il testo della cella stessa - servono regole dedicate, altrimenti
+   restano grigie e poco leggibili sullo sfondo chiaro dell'accento da selezionate. */
+.album-cell-title {
+    -fx-text-fill: -text-primary;
+    -fx-font-weight: bold;
+}
+
+.album-cell-subtitle {
+    -fx-text-fill: -text-secondary;
+}
+
+.list-cell:selected .album-cell-title,
+.list-cell:selected .album-cell-subtitle {
+    -fx-text-fill: -on-accent;
 }
 
 /* Stile delle TableView */
-./* Stile per le celle della tabella */
 .table-view .table-cell {
-    -fx-text-fill: white !important; /* Usa `!important` per sovrascrivere eventuali altre regole */
-}
-
-
-/* Stile per le celle della tabella */
-.table-view .table-cell {
-    -fx-text-fill: white; /* Testo bianco */
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile per la riga della tabella */
 .table-row-cell {
-    -fx-background-color: #1e1e1e; /* Sfondo nero */
-    -fx-text-fill: white; /* Testo bianco */
+    -fx-background-color: -bg-base;
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile alternato per le righe dispari */
 .table-row-cell:odd {
-    -fx-background-color: #2b2b2b; /* Sfondo grigio scuro per righe dispari */
+    -fx-background-color: -bg-surface-alt;
 }
 
 /* Stile per le righe selezionate */
 .table-row-cell:selected {
-    -fx-background-color: #000000; /* Sfondo più chiaro per la selezione */
-    -fx-text-fill: white; /* Testo bianco per la selezione */
+    -fx-background-color: -accent;
+    -fx-text-fill: -on-accent;
+    -fx-border-color: transparent;
 }
+
+/* -fx-text-fill sulla riga sopra non raggiunge le sue .table-cell figlie (non è
+   ereditato da TableRow a TableCell), e .table-view .table-cell qui sopra ha una
+   dichiarazione esplicita che vince sempre: senza questa regola il testo di una riga
+   selezionata restava -text-primary (chiaro) sullo sfondo chiaro dell'accento - stesso
+   problema già risolto per le celle album con setGraphic, causa diversa (cascata CSS
+   invece di stile inline), stesso effetto. */
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: -on-accent;
+}
+
+/* Riga del brano attualmente in riproduzione: rosso chiaro fisso, non legato al tema
+   (come -danger) - un rosso scuro (il precedente rgba(255,0,0,0.41)) rendeva illeggibile
+   il testo scuro quando la riga era anche selezionata. Testo forzato esplicitamente
+   scuro invece di -on-accent: in Indaco/Ambra/Chiaro quel token è bianco, illeggibile su
+   un rosso chiaro. Dichiarata DOPO :selected qui sopra: a parità di specificità vince
+   l'ultima regola, quindi "in riproduzione" resta visibile anche se la riga è anche
+   selezionata, invece di sparire dietro al colore di selezione. */
+.table-row-cell.now-playing-row {
+    -fx-background-color: rgba(255, 150, 150, 0.95);
+}
+
+.table-row-cell.now-playing-row .table-cell {
+    -fx-text-fill: #1a1a1a;
+}
+
 /* Stile per lo stato della tabella vuota */
 .table-view .placeholder {
-    -fx-background-color: #2b2b2b; /* Colore di sfondo scuro per la tabella vuota */
-    -fx-text-fill: #999999; /* Colore del testo per il messaggio di placeholder */
-    -fx-font-size: 14px; /* Dimensione del testo del messaggio */
+    -fx-background-color: -bg-surface-alt;
+    -fx-text-fill: -text-muted;
+    -fx-font-size: 14px;
 }
 
 /* Rimuove il bordo esterno della TableView */
 .table-view {
-    -fx-border-color: #1e1e1e;  /* Usa lo stesso colore dello sfondo */
+    -fx-border-color: -bg-base;
     -fx-background-insets: 0;
-    -fx-background-color: #1e1e1e; /* Mantiene la coerenza del colore di sfondo */
+    -fx-background-color: -bg-base;
 }
 
 /* Rimuove il bordo del focus */
@@ -128,81 +236,81 @@
     -fx-faint-focus-color: transparent;
 }
 
-/* Rimuove il bordo selezionato delle righe */
-.table-row-cell:selected {
-    -fx-background-color: #000000; /* Mantiene uno sfondo scuro per le righe selezionate */
-    -fx-text-fill: white; /* Testo bianco per la selezione */
-    -fx-border-color: transparent; /* Rimuove il bordo blu */
-}
-
-
 /* Stile delle TextField */
 .text-field {
-    -fx-background-color: #333; /* Sfondo dei campi di testo */
-    -fx-text-fill: white; /* Testo nei campi */
-    -fx-border-color: #555;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 6px 10px;
 }
 
 /* Scorrimento */
 .scroll-bar {
-    -fx-background-color: #1e1e1e;
+    -fx-background-color: -bg-base;
 }
 
 .scroll-bar .thumb {
-    -fx-background-color: #444;
+    -fx-background-color: -bg-elevated;
     -fx-background-radius: 5px;
 }
 
 .scroll-bar .thumb:hover {
-    -fx-background-color: #666;
+    -fx-background-color: -bg-elevated-hover;
 }
 
 /* Stile dei Label */
 .label {
-    -fx-text-fill: #d3d3d3;
+    -fx-text-fill: -text-secondary;
+}
+
+/* Intestazioni di colonna nella finestra di ricerca (Artisti/Album/Brani) */
+.search-column-header {
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile delle ImageView (ad esempio per album cover) */
 .image-view {
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0.5, 0, 2);
-    -fx-border-color: #000; /* Contorno nero */
-    -fx-border-width: 2; /* Spessore del contorno */
-    -fx-border-radius: 5px; /* Raggio del contorno */
-    -fx-padding: 5; /* Spazio tra l'immagine e il contorno */
+    -fx-border-color: -border;
+    -fx-border-width: 2;
+    -fx-border-radius: 5px;
+    -fx-padding: 5;
 }
 
 /* Stile per il BorderPane in basso */
 #bottom {
-    -fx-background-color: #202020; /* Sfondo scuro per la parte inferiore */
-    -fx-border-color: #000000; /* Colore del bordo (opzionale) */
-    -fx-border-width: 1px 0 0 0; /* Bordi in alto, per separare dal resto */
+    -fx-background-color: -bg-surface;
+    -fx-border-color: -border;
+    -fx-border-width: 1px 0 0 0;
 }
-
 
 /* Class for clickable labels */
 .clickable-label {
-    -fx-cursor: hand; /* Change cursor to hand on hover */
+    -fx-cursor: hand;
 }
 
 .clickable-label:hover {
-    -fx-underline: true; /* Underline text on hover */
-    -fx-text-fill: #1e90ff; /* Change text color on hover (optional) */
+    -fx-underline: true;
+    -fx-text-fill: -accent;
 }
 
 /* Default style for the ToggleButton */
 .toggle-button {
-    -fx-background-color: #444; /* Default background color */
-    -fx-text-fill: white;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
 }
 
 /* Style for when the ToggleButton is selected */
 .toggle-button:selected {
-    -fx-background-color: #760000; /* Green color when selected */
-    -fx-text-fill: white;
+    -fx-background-color: -accent;
+    -fx-text-fill: -on-accent;
 }
-
 
 /* Scena */
 .scene {
-    -fx-background-color: #1e1e1e;
+    -fx-background-color: -bg-base;
 }

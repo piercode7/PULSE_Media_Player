@@ -1,0 +1,30 @@
+@import "theme-base.css";
+
+/*
+ * Tema "Indaco": la palette scura con l'accento viola/indaco più acceso, quella
+ * introdotta per prima come palette condivisa dell'app. Tema di default.
+ */
+.root {
+    -bg-base: #14161c;
+    -bg-surface: #1b1e27;
+    -bg-surface-alt: #20232e;
+    -bg-elevated: #262a38;
+    -bg-elevated-hover: #323749;
+    -bg-elevated-pressed: #40465c;
+
+    -border: #3a3f4f;
+    -border-subtle: #262b38;
+
+    -text-primary: #eceef2;
+    -text-secondary: #a7acbd;
+    -text-muted: #6b7086;
+
+    -accent: #6c5ce7;
+    -accent-hover: #8074ea;
+    -accent-pressed: #5a49d0;
+    -accent-muted: #322c54;
+    -on-accent: #ffffff;
+
+    -danger: #e5484d;
+    -danger-hover: #f0656a;
+}

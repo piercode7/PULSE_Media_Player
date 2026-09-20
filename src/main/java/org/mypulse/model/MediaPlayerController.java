@@ -6,6 +6,8 @@ import javafx.beans.Observable;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.ClipboardContent;
@@ -18,6 +20,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -46,7 +50,6 @@ public class MediaPlayerController extends VBox {
     private Button playButton;       // Pulsante Play
     private Button pauseButton;      // Pulsante Pause
     private Button stopButton;       // Pulsante Stop
-    private SearchFrame searchFrame; // Variabile per memorizzare il frame di ricerca
     private List<Track> queuedTracks; // coda di ascolto
     private Button nextButton;
     private Button prevButton;
@@ -57,7 +60,8 @@ public class MediaPlayerController extends VBox {
     private Utils utils;
 
 
-    public MediaPlayerController(MusicLibrary musicLibrary, MainView mainView, AllViews allViews) {
+    public MediaPlayerController(MusicLibrary musicLibrary, MainView mainView, AllViews allViews,
+                                  Button searchButton, Button lyricsButton) {
         this.mainView = mainView; // Riferimento alla MainView
         queuedTracks = mainView.getQueueTracks();
         this.orderedSelectedTracks = new ArrayList<>();
@@ -65,24 +69,57 @@ public class MediaPlayerController extends VBox {
         this.utils = new Utils();
 
 
-        // Set padding and spacing for the media player
-        this.setPadding(new Insets(10));
-        this.setSpacing(10);
+        // Padding e spaziatura ridotti rispetto all'originale (10/10), ma non al minimo:
+        // la riga sopra i controlli (titolo/artista/album) è un'etichetta cliccabile, le
+        // serve un minimo di respiro per restare comoda da premere.
+        this.setPadding(new Insets(6, 10, 6, 10));
+        this.setSpacing(6);
 
         // Create the controls layout for the buttons
         HBox controlsLayout = new HBox(10);
         controlsLayout.setAlignment(Pos.CENTER); // Center the buttons horizontally
 
-        // Create media control buttons
+        // Create media control buttons: icone vettoriali (Polygon/Rectangle) invece di
+        // testo/simboli Unicode - niente rischio di "tofu" se un carattere non è coperto
+        // dal font attivo (lo stesso problema già affrontato per i lyrics), e un aspetto
+        // più simile a un player moderno (Spotify/Apple Music) senza introdurre colori
+        // o forme fuori dalla palette del tema.
         replayButton = new ToggleButton("R");
-        replayButton.setStyle("-fx-font-size: 14px;");
-        replayButton.getStyleClass().add("replayButton-theme");
+        replayButton.getStyleClass().addAll("replayButton-theme", "transport-button");
+        replayButton.setTooltip(new Tooltip("Ripeti brano"));
 
-        prevButton = new Button("<<");
-        playButton = new Button("Play");
-        pauseButton = new Button("Pause");
-        stopButton = new Button("X");
-        nextButton = new Button(">>");
+        prevButton = new Button();
+        prevButton.setGraphic(buildSkipIcon(false));
+        prevButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        prevButton.getStyleClass().add("transport-button");
+        prevButton.setTooltip(new Tooltip("Brano precedente"));
+
+        // Play resta il pulsante primario della barra: un po' più grande e riempito con
+        // l'accento del tema, per segnalare l'azione principale
+        playButton = new Button();
+        playButton.setGraphic(buildTriangleIcon(true));
+        playButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        playButton.getStyleClass().add("transport-button-primary");
+        Tooltip playTooltip = new Tooltip("Play");
+        playButton.setTooltip(playTooltip);
+
+        pauseButton = new Button();
+        pauseButton.setGraphic(buildPauseIcon());
+        pauseButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        pauseButton.getStyleClass().add("transport-button");
+        pauseButton.setTooltip(new Tooltip("Pausa"));
+
+        stopButton = new Button();
+        stopButton.setGraphic(buildStopIcon());
+        stopButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        stopButton.getStyleClass().add("transport-button");
+        stopButton.setTooltip(new Tooltip("Stop"));
+
+        nextButton = new Button();
+        nextButton.setGraphic(buildSkipIcon(true));
+        nextButton.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        nextButton.getStyleClass().add("transport-button");
+        nextButton.setTooltip(new Tooltip("Brano successivo"));
 
 // Create fixed-width spacers
         Region spacer1 = new Region();
@@ -91,11 +128,23 @@ public class MediaPlayerController extends VBox {
         Region spacer2 = new Region();
         spacer2.setMinWidth(5);  // Adjust width for space between 'X' and '>>'
 
-// Add buttons and spacers to controls layout
-        controlsLayout.getChildren().addAll(replayButton, spacer1, prevButton, playButton, pauseButton, nextButton, spacer2, stopButton);
+        // Cerca e Lyrics ora sulla stessa riga dei controlli di riproduzione (prima erano
+        // su una riga a parte, sopra la barra di avanzamento/volume): due spaziatori
+        // elastici li spingono ai due estremi mentre i pulsanti di trasporto restano
+        // centrati, per tenere la barra complessiva più snella (una riga in meno).
+        Region leftEdgeSpacer = new Region();
+        Region rightEdgeSpacer = new Region();
+        HBox.setHgrow(leftEdgeSpacer, Priority.ALWAYS);
+        HBox.setHgrow(rightEdgeSpacer, Priority.ALWAYS);
 
-// Center align the layout
-        controlsLayout.setAlignment(Pos.CENTER);
+// Add buttons and spacers to controls layout
+        controlsLayout.getChildren().addAll(
+                searchButton,
+                leftEdgeSpacer,
+                replayButton, spacer1, prevButton, playButton, pauseButton, nextButton, spacer2, stopButton,
+                rightEdgeSpacer,
+                lyricsButton
+        );
 // -----------------------------------------------------------------------
 
 
@@ -115,7 +164,7 @@ public class MediaPlayerController extends VBox {
 
         // Create a layout for search, progress, and volume
         HBox progressAndVolumeLayout = new HBox(20);  // Increased spacing to 20 for better separation
-        progressAndVolumeLayout.setPadding(new Insets(10, 0, 0, 0));
+        progressAndVolumeLayout.setPadding(new Insets(2, 0, 0, 0));
         progressAndVolumeLayout.setAlignment(Pos.CENTER);  // Center-align the layout
 
         // Make the progress slider expand and stay centered
@@ -164,6 +213,54 @@ public class MediaPlayerController extends VBox {
         addProgressSliderListener();
     }
 
+    // Icone vettoriali per i pulsanti di trasporto, costruite con forme JavaFX invece di
+    // caratteri Unicode (▶/⏸/⏭ ecc.): non tutti quei glifi sono coperti dal font attivo
+    // (stesso rischio di "tofu" già risolto per i lyrics), mentre una Polygon/Rectangle
+    // disegna sempre lo stesso identico pulsante su qualunque sistema. Il colore non è
+    // fisso nel codice: la classe CSS (icon-secondary/icon-on-accent) lo lega ai token
+    // del tema attivo, così le icone cambiano insieme al resto quando si cambia tema.
+    private Node buildTriangleIcon(boolean onAccent) {
+        Polygon triangle = new Polygon(0, 0, 0, 14, 12, 7);
+        triangle.getStyleClass().add(onAccent ? "icon-on-accent" : "icon-secondary");
+        return triangle;
+    }
+
+    private Node buildPauseIcon() {
+        Rectangle bar1 = new Rectangle(4, 14);
+        Rectangle bar2 = new Rectangle(4, 14);
+        bar1.getStyleClass().add("icon-secondary");
+        bar2.getStyleClass().add("icon-secondary");
+        HBox bars = new HBox(4, bar1, bar2);
+        bars.setAlignment(Pos.CENTER);
+        return bars;
+    }
+
+    private Node buildStopIcon() {
+        Rectangle square = new Rectangle(12, 12);
+        square.setArcWidth(2);
+        square.setArcHeight(2);
+        square.getStyleClass().add("icon-secondary");
+        return square;
+    }
+
+    // Il "doppio triangolo" classico di avanti/indietro veloce: due Polygon
+    // sovrapposte in un Group invece che affiancate in una HBox, per farle toccare
+    // leggermente come nell'icona standard invece di apparire troppo distanziate
+    private Node buildSkipIcon(boolean pointingRight) {
+        Polygon tri1 = new Polygon();
+        Polygon tri2 = new Polygon();
+        if (pointingRight) {
+            tri1.getPoints().addAll(0.0, 0.0, 0.0, 14.0, 9.0, 7.0);
+            tri2.getPoints().addAll(7.0, 0.0, 7.0, 14.0, 16.0, 7.0);
+        } else {
+            tri1.getPoints().addAll(9.0, 0.0, 9.0, 14.0, 0.0, 7.0);
+            tri2.getPoints().addAll(16.0, 0.0, 16.0, 14.0, 7.0, 7.0);
+        }
+        tri1.getStyleClass().add("icon-secondary");
+        tri2.getStyleClass().add("icon-secondary");
+        return new Group(tri1, tri2);
+    }
+
     private void setRowFactoryForTableView(TableView<Track> tableView) {
         // Il listener di selezione va registrato una sola volta per tabella: la rowFactory
         // sotto viene invocata da JavaFX per ogni riga renderizzata (scroll, resize, refresh),
@@ -175,12 +272,16 @@ public class MediaPlayerController extends VBox {
                 @Override
                 protected void updateItem(Track item, boolean empty) {
                     super.updateItem(item, empty);
-                    if (item == null || empty) {
-                        setStyle(""); // Rimuovi lo stile quando non c'è alcun brano nella riga
-                    } else if (item.equals(mainView.getCurrentlyPlayingTrack())) {
-                        setStyle("-fx-background-color: rgba(255,0,0,0.41);"); // Evidenzia la riga del brano in riproduzione
-                    } else {
-                        setStyle(""); // Resetta lo stile per le altre righe
+                    // Classe CSS invece di uno stile inline fisso (era un rosso uguale in
+                    // ogni tema, rgba(255,0,0,0.41)): uno stile inline vince sempre sulla
+                    // selezione, quindi selezionare il brano in riproduzione nascondeva del
+                    // tutto l'evidenziazione della selezione (e, dopo la correzione del
+                    // contrasto del testo selezionato, ci lasciava anche testo scuro poco
+                    // leggibile su quel rosso scuro). Con una classe, ":selected" nel CSS può
+                    // avere la precedenza quando la riga è sia in riproduzione che selezionata.
+                    getStyleClass().remove("now-playing-row");
+                    if (item != null && !empty && item.equals(mainView.getCurrentlyPlayingTrack())) {
+                        getStyleClass().add("now-playing-row");
                     }
                 }
             };
@@ -596,8 +697,9 @@ public class MediaPlayerController extends VBox {
                 // Inizia la riproduzione
                 mediaPlayer.play();
 
-                // Cambia il testo del pulsante Play a "Play"
-                playButton.setText("Play");
+                // Il pulsante è icon-only (stessa icona per "avvia" e "riprendi"): la
+                // distinzione resta disponibile al passaggio del mouse sul tooltip
+                playButton.getTooltip().setText("Play");
 
                 // Imposta il brano corrente in riproduzione
                 mainView.setCurrentlyPlayingTrack(selectedTrack);
@@ -720,7 +822,7 @@ public class MediaPlayerController extends VBox {
         if (mediaPlayer != null && mediaPlayer.getStatus() == MediaPlayer.Status.PAUSED) {
             // Riprendi la riproduzione
             mediaPlayer.play();
-            playButton.setText("Play");  // Cambia il testo del pulsante
+            playButton.getTooltip().setText("Play");
 
             Utils.logSeparator();
             System.out.println("[Resume] " + describeCurrentTrack());
@@ -740,7 +842,7 @@ public class MediaPlayerController extends VBox {
     private void pauseTrack() {
         if (mediaPlayer != null && mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
             mediaPlayer.pause();
-            playButton.setText("Resume");  // Cambia il testo del pulsante
+            playButton.getTooltip().setText("Resume");
 
             Utils.logSeparator();
             System.out.println("[Pausa] " + describeCurrentTrack());

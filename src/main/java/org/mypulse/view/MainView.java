@@ -15,6 +15,7 @@ import org.mypulse.controller.LyricsController;
 import org.mypulse.controller.MusicController;
 import org.mypulse.model.*;
 import org.mypulse.util.SerializationUtils;
+import org.mypulse.util.ThemeManager;
 import org.mypulse.util.Utils;
 import org.mypulse.view.components.*;
 
@@ -131,7 +132,9 @@ public class MainView extends Application {
 // Creare il menu e passare l'azione di scansione, la libreria musicale, MainView, e AllViews
         appMenu = new AppMenu(scanAction, musicLibrary, this, allViews);
         MenuBar menuBar = appMenu.createMenuBar(primaryStage);
-        menuBar.setStyle("-fx-background-color: #333333; -fx-text-fill: white;");
+        // Niente più colore fisso qui: la regola .menu-bar del tema attivo (dark-theme.css)
+        // si applica da sola. Prima questo .setStyle() aveva priorità su qualunque tema
+        // scelto dal selettore, quindi la barra del menu restava sempre dello stesso grigio.
 
 
         try {
@@ -164,6 +167,10 @@ public class MainView extends Application {
         listViewMenu = new ListView<>();
         listViewMenu.getItems().addAll("Artisti", "Album", "Brani", "Playlist", "Coda");
         listViewMenu.setPrefWidth(150);
+        // Classe dedicata per dare alla navigazione principale un peso diverso (più in
+        // grassetto) dalle liste di contenuto (artisti, brani, ...) che condividono la
+        // stessa .list-cell generica - più gerarchia visiva, meno "piatto"
+        listViewMenu.getStyleClass().add("nav-list");
         GridPane.setVgrow(listViewMenu, Priority.ALWAYS);
         gridPane.add(listViewMenu, 0, 0);
 
@@ -228,65 +235,48 @@ public class MainView extends Application {
         rootPane.setTop(menuBar);
 
 
-// Creazione dell'HBox per le informazioni del brano
-        HBox infoBar = new HBox(10);  // Spaziatura di 10 tra gli elementi
-        infoBar.setAlignment(Pos.CENTER);  // Allinea tutto al centro
-        infoBar.setPadding(new Insets(5, 0, 5, 0));  // Aggiungi padding superiore (10) e inferiore (20)
-
-        infoBar.setStyle("-fx-background-color: #444444; -fx-text-fill: white;");  // Stile per sfondo e testo
+// Pulsanti Cerca e Lyrics: costruiti qui perché servono al MediaPlayerController (li
+// mette sulla stessa riga dei controlli di riproduzione, agli estremi sinistro/destro).
+// Le azioni restano collegate più sotto, dove già venivano assegnate.
         searchButton = new Button("Cerca");
-        searchButton.setMinWidth(60); // Set a minimum width for the button if necessary
+        searchButton.setMinWidth(60);
 
         lyricsButton = new Button("Lyrics");
-        lyricsButton.setMinWidth(60); // Imposta una larghezza minima per il pulsante se necessario
+        lyricsButton.setMinWidth(60);
 
+// Etichette con titolo/artista/album del brano in riproduzione. Prima stavano nella
+// stessa fascia dei due pulsanti sopra; ora quella fascia non esiste più (Cerca e Lyrics
+// sono passati al media player), quindi restano da sole in una riga sottile, inserita
+// dentro il media player subito sopra la barra di avanzamento/volume.
+        HBox nowPlayingLabels = new HBox(10);
+        nowPlayingLabels.setAlignment(Pos.CENTER);
+        nowPlayingLabels.setPadding(new Insets(0, 0, 2, 0));  // Un po' di spazio verso la barra volume
 
-// Etichette per titolo, artista e album
         titleLabel = new Label("");
         artistLabel = new Label("");
         albumLabel = new Label("");
 
         titleLabel.getStyleClass().add("clickable-label");
 
+// Colori del tema invece di bianco/grigio fissi, così cambiano insieme al resto quando si
+// sceglie un tema diverso dal selettore.
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: -text-primary;");
+        artistLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: -text-secondary;");
+        albumLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: -text-secondary;");
 
-// Crea un pulsante "lyrics" e impostalo fisso all'estrema sinistra
-
-// Crea due spaziatori (uno prima e uno dopo le etichette)
-        Region leftSpacer = new Region();
-        Region rightSpacer = new Region();
-
-// Imposta l'HBox di espandersi per centrare le etichette
-        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
-        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
-
-// Imposta lo stile per le etichette (le info secondarie come artista e album saranno meno prominenti)
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: white;");
-        artistLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #dad9d9;");
-        albumLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #dad9d9;");
-
-// Imposta le etichette per espandersi e rimanere centrate
-        titleLabel.setMaxWidth(Double.MAX_VALUE);
-        artistLabel.setMaxWidth(Double.MAX_VALUE);
-        albumLabel.setMaxWidth(Double.MAX_VALUE);
-
-// Imposta l'allineamento del testo al centro per ogni etichetta
-        titleLabel.setAlignment(Pos.CENTER);
-        artistLabel.setAlignment(Pos.CENTER);
-        albumLabel.setAlignment(Pos.CENTER);
-
-// Aggiungi il pulsante, gli spaziatori e le etichette all'HBox
-        infoBar.getChildren().addAll(searchButton, leftSpacer, titleLabel, artistLabel, albumLabel, rightSpacer, lyricsButton);
-
-// Aggiungi l'infoBar subito sotto il MenuBar
-        VBox topContainer = new VBox(menuBar, infoBar);  // Aggiungi l'infoBar e il menuBar nello stesso contenitore verticale
-        rootPane.setTop(topContainer);  // Imposta questo contenitore come la parte superiore del BorderPane
+        nowPlayingLabels.getChildren().addAll(titleLabel, artistLabel, albumLabel);
 
 
-        // Crea il MediaPlayerController
-// Crea il MediaPlayerController
+        // Crea il MediaPlayerController, passandogli Cerca e Lyrics da collocare sulla
+        // riga dei controlli di riproduzione
         // Media player at the bottom
-        mediaPlayerControl = new MediaPlayerController(musicLibrary, this, allViews);
+        mediaPlayerControl = new MediaPlayerController(musicLibrary, this, allViews, searchButton, lyricsButton);
         mediaPlayerControl.setId("bottom"); // Assegna un ID al MediaPlayerController
+
+        // Inserisce la riga con titolo/artista/album sopra i pulsanti di trasporto
+        // (indice 0): prima stava fra i pulsanti e la barra progresso/volume, ma titolo e
+        // pulsanti funzionano meglio con l'etichetta cliccabile in cima
+        mediaPlayerControl.getChildren().add(0, nowPlayingLabels);
 
         // Aggiungi il media player in basso al BorderPane
         rootPane.setBottom(mediaPlayerControl);
@@ -533,6 +523,11 @@ public class MainView extends Application {
             }
         });
 
+        // Seleziona "Artisti" di default all'avvio: senza questo listViewMenu partiva
+        // senza alcuna selezione (nessun elemento è preselezionato in un ListView per
+        // conto suo) e l'app si apriva su una finestra vuota - solo il menu a sinistra,
+        // nessuna lista popolata - finché l'utente non cliccava manualmente una voce
+        listViewMenu.getSelectionModel().select("Artisti");
 
         listViewArtist.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
@@ -678,6 +673,7 @@ public class MainView extends Application {
         // Creazione della scena
         Scene scene = new Scene(rootPane, 1400, 800);
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
+        ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
 
         primaryStage.setScene(scene);
         primaryStage.setTitle("Pulse");

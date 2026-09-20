@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 
 public class PlaylistEditor {
@@ -89,6 +90,7 @@ public class PlaylistEditor {
         BorderPane root = new BorderPane(mainLayout);
         Scene scene = new Scene(root, 600, 400);
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
+        ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
         stage.setScene(scene);
     }
 

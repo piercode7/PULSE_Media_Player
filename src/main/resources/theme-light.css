@@ -1,0 +1,30 @@
+@import "theme-base.css";
+
+/*
+ * Tema "Chiaro": sfondi chiari, testo scuro. Stesso accento indaco del tema Indaco per
+ * coerenza di marchio tra le due varianti principali.
+ */
+.root {
+    -bg-base: #f5f6f8;
+    -bg-surface: #ffffff;
+    -bg-surface-alt: #eef0f3;
+    -bg-elevated: #e7e9ee;
+    -bg-elevated-hover: #dde0e7;
+    -bg-elevated-pressed: #cfd3dc;
+
+    -border: #d7dae0;
+    -border-subtle: #e7e9ee;
+
+    -text-primary: #1c1e24;
+    -text-secondary: #565b66;
+    -text-muted: #8a8f99;
+
+    -accent: #6c5ce7;
+    -accent-hover: #7d6eec;
+    -accent-pressed: #5a49d0;
+    -accent-muted: #e7e3fb;
+    -on-accent: #ffffff;
+
+    -danger: #d1373c;
+    -danger-hover: #b92f34;
+}

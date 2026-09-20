@@ -1,0 +1,17 @@
+/*
+ * Regole condivise da tutti i temi, indipendenti dai colori. Importato da ciascun
+ * theme-*.css: cambiare il font per tutta l'app si riduce a modificarlo qui una volta
+ * sola, invece che in ogni singolo tema.
+ */
+.root {
+    /* Noto Sans CJK JP copre anche i caratteri latini (stessa base grafica di Noto Sans,
+       incluso l'aspetto) e in più quelli giapponesi/cinesi/coreani ovunque possano
+       comparire (lyrics, tag di brani non latini, ...), senza dover ripetere la stessa
+       regola in ogni finestra. */
+    -fx-font-family: "Noto Sans CJK JP", "Noto Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+
+    /* Dimensione di base più grande del default JavaFX/Modena (13px, quello che dava
+       l'aspetto "datato" lamentato): 14px ovunque non venga già sovrascritto più
+       specificamente (es. i titoli), -fx-font-size è ereditato quindi basta qui */
+    -fx-font-size: 14px;
+}

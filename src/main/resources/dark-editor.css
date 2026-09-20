@@ -1,95 +1,95 @@
+/* I colori arrivano da uno dei fogli theme-*.css, aggiunto alla Scene da ThemeManager
+   insieme a questo foglio strutturale - vedi il commento in cima a dark-theme.css. */
+
 /* Root pane */
 .root {
-    -fx-base: #2b2b2b; /* Base dark color */
-    -fx-background-color: #2b2b2b; /* Background for the editor */
-    -fx-text-fill: #ffffff; /* Text color */
+    -fx-base: -bg-base;
+    -fx-background-color: -bg-base;
+    -fx-text-fill: -text-primary;
 }
 
 /* Labels */
 .label {
-    -fx-text-fill: #d3d3d3; /* Slightly lighter text for labels */
+    -fx-text-fill: -text-secondary;
+    -fx-font-size: 14px;
 }
 
 /* Assicurati che TextField e TextArea abbiano lo stesso stile */
 .text-field {
-    -fx-background-color: #333333; /* Stesso colore di sfondo scuro */
-    -fx-text-fill: #ffffff; /* Testo bianco */
-    -fx-border-color: #555555; /* Bordo sottile */
-    -fx-border-radius: 5px; /* Angoli arrotondati */
-    -fx-background-radius: 5px; /* Angoli arrotondati */
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
 }
 
 /* Stile del TextArea */
 .text-area {
-    -fx-control-inner-background: #333333; /* Fondo del TextArea */
-    -fx-text-fill: #dcdcdc; /* Colore del testo */
-    -fx-highlight-fill: #444; /* Colore di sfondo del testo selezionato */
-    -fx-highlight-text-fill: white; /* Colore del testo selezionato */
-    -fx-prompt-text-fill: #aaaaaa; /* Colore del testo segnaposto */
+    -fx-control-inner-background: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-highlight-fill: -accent-muted;
+    -fx-highlight-text-fill: -text-primary;
+    -fx-prompt-text-fill: -text-muted;
     -fx-background-insets: 0;
-    -fx-border-color: #555555; /* Bordo sottile */
-    -fx-border-radius: 5px; /* Angoli arrotondati */
-    -fx-background-radius: 5px; /* Angoli arrotondati */
-    /* Stesso problema e stessa correzione di dark-lyrics.css: senza un font esplicito,
-       un testo con parti in giapponese/cinese/coreano (es. nella tab Lyrics di questo
-       editor) veniva mostrato come quadrati invece dei caratteri veri */
-    -fx-font-family: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "MS Gothic", "Droid Sans Fallback", "Noto Sans", sans-serif;
+    -fx-border-color: -border;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
 }
-
-
 
 /* ScrollPane styling */
 .scroll-pane {
-    -fx-background-color: #2b2b2b; /* Match the dark background */
+    -fx-background-color: -bg-base;
 }
 
-/* Buttons */
+/* Buttons: stessi angoli morbidi (8px) del resto dell'app, invariati rispetto a prima */
 .button {
-    -fx-background-color: #444444; /* Darker button background */
-    -fx-text-fill: #ffffff; /* White text */
-    -fx-border-color: #666666; /* Slightly lighter border */
-    -fx-border-radius: 5px; /* Rounded corners */
-    -fx-background-radius: 5px; /* Rounded corners */
-    -fx-padding: 8px 15px; /* Padding for a modern look */
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 16px;
+    -fx-effect: none;
 }
 
 /* Button hover effect */
 .button:hover {
-    -fx-background-color: #555555; /* Lighter background on hover */
+    -fx-background-color: -bg-elevated-hover;
 }
 
 /* ImageView */
 .image-view {
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0.5, 0, 2); /* Shadow effect for the cover */
-    -fx-border-color: #000000; /* Black border around the image */
-    -fx-border-width: 2; /* Border thickness */
-    -fx-border-radius: 5px; /* Rounded corners */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0.5, 0, 2);
+    -fx-border-color: -border;
+    -fx-border-width: 2;
+    -fx-border-radius: 5px;
 }
 
 /* Tabs and TabPane */
 .tab-pane {
-    -fx-background-color: #2b2b2b; /* Dark background for the TabPane */
+    -fx-background-color: -bg-base;
 }
 
 .tab {
-    -fx-background-color: #333333; /* Background for tabs */
-    -fx-text-base-color: #ffffff; /* Text color for tabs */
+    -fx-background-color: -bg-surface;
+    -fx-text-base-color: -text-secondary;
 }
 
 .tab:selected {
-    -fx-background-color: #444444; /* Background for the selected tab */
+    -fx-background-color: -bg-elevated;
+    -fx-text-base-color: -accent;
 }
 
 /* ScrollBars */
 .scroll-bar {
-    -fx-background-color: #2b2b2b; /* Dark background */
+    -fx-background-color: -bg-base;
 }
 
 .scroll-bar .thumb {
-    -fx-background-color: #555555; /* Thumb color */
-    -fx-background-radius: 5px; /* Rounded corners */
+    -fx-background-color: -bg-elevated;
+    -fx-background-radius: 5px;
 }
 
 .scroll-bar .thumb:hover {
-    -fx-background-color: #666666; /* Hover effect for the thumb */
+    -fx-background-color: -bg-elevated-hover;
 }

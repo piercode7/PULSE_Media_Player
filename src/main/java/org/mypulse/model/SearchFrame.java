@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Callback;
+import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 import org.mypulse.view.components.AlbumListView;
 import org.mypulse.view.components.ArtistListView;
@@ -82,10 +83,15 @@ public class SearchFrame extends Stage {
         albumListView.setPlaceholder(new Label("Nessun album trovato"));
         trackListView.setPlaceholder(new Label("Nessun brano trovato"));
 
-        // Etichette per le tre colonne
+        // Etichette per le tre colonne: in grassetto, come le altre intestazioni di
+        // sezione nell'app (nav-list, titolo dei lyrics, ...) invece del testo piatto di
+        // prima, indistinguibile a colpo d'occhio dal contenuto sotto
         Label artistLabel = new Label("Artisti");
         Label albumLabel = new Label("Album");
         Label trackLabel = new Label("Brani");
+        artistLabel.getStyleClass().add("search-column-header");
+        albumLabel.getStyleClass().add("search-column-header");
+        trackLabel.getStyleClass().add("search-column-header");
 
         // Crea una GridPane per organizzare le colonne
         GridPane resultsGrid = new GridPane();
@@ -131,6 +137,7 @@ public class SearchFrame extends Stage {
         Scene scene = new Scene(layout, 1000, 500);
         scene.setFill(null);  // Set the initial scene fill to transparent
         scene.getStylesheets().add(getClass().getResource("/dark-theme.css").toExternalForm());
+        ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
         layout.applyCss();
 
 
@@ -195,10 +202,10 @@ public class SearchFrame extends Stage {
                 vbox.setPadding(new Insets(5));
 
                 Label albumName = new Label(album.getName());
-                albumName.setStyle("-fx-font-weight: bold;");
+                albumName.getStyleClass().add("album-cell-title");
 
                 Label artistName = new Label(album.getArtistAlbum());
-                artistName.setStyle("-fx-text-fill: gray;");
+                artistName.getStyleClass().add("album-cell-subtitle");
 
                 vbox.getChildren().addAll(albumName, artistName);
                 setGraphic(vbox);
@@ -219,13 +226,13 @@ public class SearchFrame extends Stage {
                 vbox.setPadding(new Insets(5));
 
                 Label trackTitle = new Label(track.getTitle());
-                trackTitle.setStyle("-fx-font-weight: bold;");
+                trackTitle.getStyleClass().add("album-cell-title");
 
                 Label albumName = new Label("Album: " + track.getAlbumName());
-                albumName.setStyle("-fx-text-fill: gray;");
+                albumName.getStyleClass().add("album-cell-subtitle");
 
                 Label artistName = new Label("Artista: " + track.getArtistAlbum());
-                artistName.setStyle("-fx-text-fill: gray;");
+                artistName.getStyleClass().add("album-cell-subtitle");
 
                 vbox.getChildren().addAll(trackTitle, albumName, artistName);
                 setGraphic(vbox);

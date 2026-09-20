@@ -6,6 +6,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -15,6 +18,7 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.mypulse.model.Track;
 import org.mypulse.util.LyricsFetcher;
+import org.mypulse.util.ThemeManager;
 import org.mypulse.view.MainView;
 
 import java.io.File;
@@ -65,24 +69,69 @@ public class LyricsController {
         lyricsStage.initModality(Modality.WINDOW_MODAL); // Make it modal only to the application
 
 
+        // Intestazione con titolo/artista, per dare al testo un contesto (come su
+        // Spotify) invece di lasciare solo il titolo della finestra a dirlo
+        Label titleHeader = new Label(title);
+        titleHeader.getStyleClass().add("lyrics-title");
+        Label artistHeader = new Label(artist);
+        artistHeader.getStyleClass().add("lyrics-artist");
+        VBox header = new VBox(2, titleHeader, artistHeader);
+        header.setAlignment(Pos.CENTER);
+
         // Create a TextArea to display the lyrics
         TextArea lyricsArea = new TextArea();
         lyricsArea.setWrapText(true);
         lyricsArea.setEditable(true);
-        lyricsArea.setPrefWidth(500);
-        lyricsArea.setPrefHeight(600);
+        lyricsArea.setPrefWidth(560);
+        lyricsArea.setPrefHeight(560);
+        lyricsArea.getStyleClass().add("lyrics-text");
         if (track.getLyrics() != null) {
             lyricsArea.setText(track.getLyrics());
         }
 
+        // Dimensione del testo regolabile con i pulsanti A-/A+ qui sotto, invece di
+        // dover ingrandire l'intera finestra o affidarsi allo zoom del sistema
+        int[] lyricsFontSize = {19};
+        java.util.function.IntConsumer applyFontSize = size ->
+                lyricsArea.setStyle("-fx-font-size: " + size + "px;");
+        applyFontSize.accept(lyricsFontSize[0]);
+
         // Add a button for fetching the lyrics
         Button fetchLyricsButton = new Button("Fetch Lyrics");
-        fetchLyricsButton.setAlignment(Pos.CENTER);
-        fetchLyricsButton.setPadding(new Insets(10));
+        fetchLyricsButton.getStyleClass().add("lyrics-toolbar-button");
+
+        Button zoomOutButton = new Button("A−");
+        zoomOutButton.getStyleClass().add("lyrics-zoom-button");
+        Button zoomInButton = new Button("A+");
+        zoomInButton.getStyleClass().add("lyrics-zoom-button");
+
+        zoomOutButton.setOnAction(event -> {
+            lyricsFontSize[0] = Math.max(13, lyricsFontSize[0] - 2);
+            applyFontSize.accept(lyricsFontSize[0]);
+        });
+        zoomInButton.setOnAction(event -> {
+            lyricsFontSize[0] = Math.min(34, lyricsFontSize[0] + 2);
+            applyFontSize.accept(lyricsFontSize[0]);
+        });
 
         Button saveLyricsButton = new Button("Save Lyrics");
-        saveLyricsButton.setAlignment(Pos.CENTER_RIGHT);
-        saveLyricsButton.setPadding(new Insets(10));
+        saveLyricsButton.getStyleClass().add("lyrics-toolbar-button");
+
+        // Barra sopra il testo: Fetch a sinistra, zoom al centro, Save a destra - stessa
+        // logica "estremi/centro" già usata per la barra del media player
+        Region toolbarLeftSpacer = new Region();
+        Region toolbarRightSpacer = new Region();
+        HBox.setHgrow(toolbarLeftSpacer, Priority.ALWAYS);
+        HBox.setHgrow(toolbarRightSpacer, Priority.ALWAYS);
+
+        HBox toolbar = new HBox(8,
+                fetchLyricsButton,
+                toolbarLeftSpacer,
+                zoomOutButton, zoomInButton,
+                toolbarRightSpacer,
+                saveLyricsButton
+        );
+        toolbar.setAlignment(Pos.CENTER);
 
         // Add action to the button
         fetchLyricsButton.setOnAction(event -> {
@@ -149,15 +198,17 @@ public class LyricsController {
 
 
         // Layout for the frame
-        VBox vbox = new VBox(20);
-        vbox.setPadding(new Insets(15));
-        vbox.getChildren().addAll(fetchLyricsButton, lyricsArea, saveLyricsButton);
+        VBox vbox = new VBox(15);
+        vbox.setPadding(new Insets(20));
+        vbox.getChildren().addAll(header, toolbar, lyricsArea);
+        VBox.setVgrow(lyricsArea, Priority.ALWAYS);
         vbox.setAlignment(Pos.TOP_CENTER);
 
-        Scene scene = new Scene(vbox, 600, 700);
+        Scene scene = new Scene(vbox, 640, 760);
         scene.setFill(null);  // Set the initial scene fill to transparent
         scene.getStylesheets().add(getClass().getResource("/smooth-scroll.css").toExternalForm());
         scene.getStylesheets().add(getClass().getResource("/dark-lyrics.css").toExternalForm());
+        ThemeManager.applyToScene(scene); // Applica il tema (colori) attualmente scelto
 
         lyricsStage.setScene(scene);
         lyricsStage.show();

@@ -1,98 +1,144 @@
+/* I colori arrivano da uno dei fogli theme-*.css, aggiunto alla Scene da ThemeManager
+   insieme a questo foglio strutturale - vedi il commento in cima a dark-theme.css. */
+
 /* Stile generale per il background */
 .root {
-    -fx-background-color: #2b2b2b; /* Grigio scuro */
+    -fx-background-color: -bg-base;
 }
 
-/* Stile del TextArea */
-.text-area {
-    -fx-control-inner-background: #1e1e1e; /* Fondo del TextArea */
-    -fx-text-fill: #dcdcdc; /* Colore del testo */
-    -fx-highlight-fill: #444; /* Colore di sfondo del testo selezionato */
-    -fx-highlight-text-fill: white; /* Colore del testo selezionato */
-    -fx-prompt-text-fill: #aaaaaa; /* Colore del testo segnaposto */
+/* Stile del TextArea usato per il testo del brano: non più un "campo di input" con
+   bordo/sfondo proprio, ma una superficie di lettura che si fonde con lo sfondo della
+   finestra (più vicina a come Spotify mostra i lyrics), con testo più grande, in
+   grassetto e centrato. La dimensione di base (19px) è regolabile a runtime dai
+   pulsanti A-/A+ in LyricsController, che sovrascrivono solo -fx-font-size con uno
+   stile inline - le altre proprietà restano quelle di questo foglio. */
+.lyrics-text {
+    -fx-control-inner-background: -bg-base;
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-primary;
+    -fx-highlight-fill: -accent-muted;
+    -fx-highlight-text-fill: -text-primary;
+    -fx-prompt-text-fill: -text-muted;
     -fx-background-insets: 0;
-    -fx-background-radius: 5;
-    /* Senza un font esplicito, JavaFX non passa automaticamente a un font capace di
-       ideogrammi per i caratteri che il font di default non copre (a differenza di un
-       browser): un testo con una parte in giapponese/cinese/coreano (intro, sezioni
-       bilingui) veniva mostrato come quadrati al posto dei caratteri veri. Questi sono
-       font "pan-Unicode" che includono anche i caratteri latini nello stesso file, quindi
-       il resto del testo non cambia aspetto. Verificato che risolve davvero il problema
-       (screenshot prima/dopo), non solo in teoria. Se nessuno di questi è installato si
-       torna al comportamento di prima, invariato per il testo solo latino. */
-    -fx-font-family: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "MS Gothic", "Droid Sans Fallback", "Noto Sans", sans-serif;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    /* Il font (incluso il fallback per i caratteri giapponesi/cinesi/coreani) arriva per
+       eredità da theme-base.css (importato da ognuno dei fogli theme-*.css): -fx-font-family
+       è tra le proprietà che in JavaFX CSS si propagano ai discendenti, quindi non va
+       ripetuto qui - verificato con screenshot che il testo giapponese continua a
+       comparire correttamente e non più come quadrati anche solo ereditando la regola. */
 }
 
-/* Stile del pulsante */
+.lyrics-text .content {
+    -fx-background-color: -bg-base;
+    -fx-padding: 10 20 10 20;
+}
+
+.lyrics-text .scroll-pane,
+.lyrics-text .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Intestazione titolo/artista sopra il testo */
+.lyrics-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+
+.lyrics-artist {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-secondary;
+}
+
+/* Pulsanti A-/A+ per ingrandire/rimpicciolire il testo: quadrati e compatti invece
+   della larghezza variabile dei pulsanti di testo normali */
+.lyrics-zoom-button {
+    -fx-min-width: 34px;
+    -fx-font-weight: bold;
+}
+
+.lyrics-toolbar-button {
+    -fx-padding: 6 14 6 14;
+}
+
+/* Stile del pulsante: stessi angoli morbidi (8px) e niente ombra, coerente col resto
+   dell'app invece del bordo netto di prima */
 .button {
-    -fx-background-color: #444444;
-    -fx-text-fill: white;
-    -fx-border-color: #666666;
-    -fx-border-radius: 5;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16 8 16;
+    -fx-effect: none;
 }
 
 /* Stile del pulsante quando viene premuto */
 .button:pressed {
-    -fx-background-color: #555555;
+    -fx-background-color: -bg-elevated-pressed;
 }
 
 /* Barra di scorrimento */
 .scroll-pane .scroll-bar {
-    -fx-background-color: #333333;
+    -fx-background-color: -bg-surface;
 }
 
 .scroll-pane .scroll-bar .increment-button,
 .scroll-pane .scroll-bar .decrement-button {
-    -fx-background-color: #444444;
+    -fx-background-color: -bg-elevated;
 }
 
 .scroll-pane .scroll-bar .thumb {
-    -fx-background-color: #666666;
+    -fx-background-color: -bg-elevated-hover;
 }
 
 /* Stile dell'HBox contenitore */
 .hbox {
-    -fx-background-color: #333333; /* Sfondo scuro */
+    -fx-background-color: -bg-surface;
 }
 
 /* Stile delle etichette */
 .label {
-    -fx-text-fill: #dcdcdc;
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile per il TextArea della finestra dei lyrics */
 .text-area .scroll-pane .viewport {
-    -fx-padding: 5; /* Aggiungi padding per un aspetto più fluido */
+    -fx-padding: 5;
 }
 
 /* Stile per il messaggio di conferma (Alert) */
 .dialog-pane {
-    -fx-background-color: #2b2b2b; /* Sfondo scuro del dialogo */
-    -fx-border-color: #444444; /* Bordo del dialogo */
+    -fx-background-color: -bg-base;
+    -fx-border-color: -border;
     -fx-border-width: 2;
 }
 
 .dialog-pane .content.label {
-    -fx-text-fill: #dcdcdc; /* Colore del testo nel contenuto del dialogo */
+    -fx-text-fill: -text-primary;
 }
 
 .dialog-pane .header-panel {
-    -fx-background-color: #333333; /* Sfondo dell'intestazione del dialogo */
+    -fx-background-color: -bg-surface;
 }
 
 .dialog-pane .header-panel .label {
-    -fx-text-fill: #dcdcdc; /* Colore del testo dell'intestazione */
+    -fx-text-fill: -text-primary;
 }
 
 /* Stile dei pulsanti nel messaggio di conferma */
 .dialog-pane .button-bar .button {
-    -fx-background-color: #444444;
-    -fx-text-fill: white;
-    -fx-border-color: #666666;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+    -fx-border-color: -border;
     -fx-border-radius: 5;
 }
 
 /* Stile dei pulsanti nel messaggio di conferma quando vengono premuti */
 .dialog-pane .button-bar .button:pressed {
-    -fx-background-color: #555555;
+    -fx-background-color: -bg-elevated-pressed;
 }

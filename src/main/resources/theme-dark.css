@@ -1,0 +1,38 @@
+@import "theme-base.css";
+
+/*
+ * Tema "Scuro": nero/antracite neutro, senza tinte di colore (R=G=B o quasi ovunque) -
+ * elegante e sobrio invece che "blu scuro". Anche l'accento è un grigio argento/grafite,
+ * non un colore vero e proprio: la variazione resta dentro le tonalità del nero, come
+ * richiesto, invece di introdurre una tinta (prima era un blu acciaio, #5b7fa6).
+ */
+.root {
+    -bg-base: #0d0d0d;
+    -bg-surface: #141414;
+    -bg-surface-alt: #1a1a1a;
+    -bg-elevated: #202020;
+    -bg-elevated-hover: #2a2a2a;
+    -bg-elevated-pressed: #363636;
+
+    -border: #2a2a2a;
+    -border-subtle: #1a1a1a;
+
+    -text-primary: #ededed;
+    -text-secondary: #a0a0a0;
+    -text-muted: #6e6e6e;
+
+    /* Accento grigio argento/grafite invece di un colore: essendo chiaro (a differenza
+       degli accenti degli altri temi, più scuri/saturi) il testo sopra va scuro, non
+       bianco - da qui -on-accent diverso dagli altri temi. */
+    -accent: #b3b3b3;
+    -accent-hover: #c4c4c4;
+    -accent-pressed: #999999;
+    -accent-muted: #2b2b2b;
+    -on-accent: #0d0d0d;
+
+    /* Il rosso di allerta resta un vero colore anche qui: le azioni distruttive (conferme
+       di eliminazione, errori) restano riconoscibili indipendentemente dal tema, come è
+       convenzione comune anche nei temi più monocromatici/minimali. */
+    -danger: #d9534f;
+    -danger-hover: #e2726e;
+}

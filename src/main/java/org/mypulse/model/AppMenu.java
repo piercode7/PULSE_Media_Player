@@ -74,6 +74,9 @@ public class AppMenu {
 
         MenuItem apiSpoti = new MenuItem("Inserisci API di Spotify");
 
+        // Voce del menu "Vista", che finora non ne aveva mai avuta nessuna
+        MenuItem themeItem = new MenuItem("Tema...");
+
         // Aggiungere l'azione di scansione
         scanItem.setOnAction(event -> {
             scanAction.run();
@@ -147,7 +150,7 @@ public class AppMenu {
 
         apiSpoti.setOnAction(event -> SpotifyAPIDialog.requestAndSaveAPICredentials());
 
-
+        themeItem.setOnAction(event -> ThemePickerFrame.show());
 
         // Aggiungere gli item al menu "File"
         fileMenu.getItems().addAll(openItem, saveItem, saveAsItem, loadItem, loadIChoseItem, scanItem, deleteItem, exitItem);
@@ -155,6 +158,8 @@ public class AppMenu {
         editMenu.getItems().addAll(editAlbumDetails);
 
         apiMenu.getItems().addAll(apiSpoti);
+
+        viewMenu.getItems().addAll(themeItem);
 
         // Aggiungere i menu al menuBar
         menuBar.getMenus().addAll(fileMenu, editMenu, apiMenu, viewMenu);

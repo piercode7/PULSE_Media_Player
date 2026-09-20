@@ -20,10 +20,13 @@ public class AlbumListCell extends ListCell<Album> {
     private Image defaultImage;
 
     public AlbumListCell() {
-        // Configurazione delle etichette
-        albumLabel.setStyle("-fx-font-weight: bold;"); // Grassetto per il titolo dell'album
-        artistLabel.setStyle("-fx-text-fill: gray;");  // Colore grigio per l'artista
-        dateGenreLabel.setStyle("-fx-text-fill: gray;");  // Colore grigio per la data e il genere
+        // Configurazione delle etichette: classi invece di un colore fisso inline, così
+        // quando la cella è selezionata (.list-cell:selected in dark-theme.css) il testo
+        // passa al colore -on-accent invece di restare grigio e poco leggibile sullo
+        // sfondo chiaro dell'accento (un colore inline vincerebbe sempre sulla regola CSS)
+        albumLabel.getStyleClass().add("album-cell-title");
+        artistLabel.getStyleClass().add("album-cell-subtitle");
+        dateGenreLabel.getStyleClass().add("album-cell-subtitle");
 
         // Aggiungi le etichette alla VBox (in ordine verticale)
         // VBox con spaziatura per le etichette

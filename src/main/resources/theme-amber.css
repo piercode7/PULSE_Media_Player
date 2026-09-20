@@ -1,0 +1,33 @@
+@import "theme-base.css";
+
+/*
+ * Tema "Ambra": base scura calda (bruno/antracite invece di ardesia fredda) con un
+ * accento arancio/ambra - un controcanto caldo rispetto ai toni freddi di Scuro/Indaco.
+ */
+.root {
+    -bg-base: #181512;
+    -bg-surface: #211c17;
+    -bg-surface-alt: #27211b;
+    -bg-elevated: #2f2820;
+    -bg-elevated-hover: #3b3226;
+    -bg-elevated-pressed: #4a3e2e;
+
+    -border: #4a3e2e;
+    -border-subtle: #27211b;
+
+    -text-primary: #f2ece2;
+    -text-secondary: #bdb0a0;
+    -text-muted: #857a6c;
+
+    -accent: #e08a3c;
+    -accent-hover: #eb9e57;
+    -accent-pressed: #c8752c;
+    -accent-muted: #4a3420;
+    /* Bianco su questo arancio è sotto la soglia minima di contrasto leggibile
+       (~2.7:1, sotto il minimo WCAG AA di 4.5:1) - un bruno molto scuro coerente con la
+       base del tema arriva a ~7.8:1 */
+    -on-accent: #1a1310;
+
+    -danger: #e5484d;
+    -danger-hover: #f0656a;
+}
